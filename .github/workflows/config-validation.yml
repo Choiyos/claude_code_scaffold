@@ -1,0 +1,406 @@
+# Configuration Validation Pipeline
+# Validates all configuration changes with comprehensive security and quality checks
+
+name: 🔍 Configuration Validation
+
+on:
+  pull_request:
+    paths:
+      - 'config/**'
+      - 'environments/**'
+      - 'teams/**'
+      - 'src/core/services/**'
+      - '.devcontainer/**'
+    branches: [main, develop]
+  push:
+    paths:
+      - 'config/**'
+      - 'environments/**'
+      - 'teams/**'
+    branches: [develop]
+
+env:
+  NODE_VERSION: '20'
+  PYTHON_VERSION: '3.11'
+  VALIDATION_TIMEOUT: '300'
+
+jobs:
+  # Pre-validation checks
+  pre-validation:
+    name: 🚀 Pre-validation Setup
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      config-changed: ${{ steps.changes.outputs.config }}
+      env-changed: ${{ steps.changes.outputs.environments }}
+      mcp-changed: ${{ steps.changes.outputs.mcp }}
+      security-scan-required: ${{ steps.security-check.outputs.required }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect Changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            config:
+              - 'config/**'
+              - 'environments/*/config/**'
+            environments:
+              - 'environments/**'
+              - '.devcontainer/**'
+            mcp:
+              - 'src/mcp/**'
+              - 'config/mcp/**'
+            security:
+              - 'config/security/**'
+              - 'environments/*/security/**'
+              - '**/*-secret*'
+              - '**/*-key*'
+              - '**/*-cert*'
+
+      - name: Security Scan Requirements
+        id: security-check
+        run: |
+          if [[ "${{ steps.changes.outputs.security }}" == "true" ]]; then
+            echo "required=true" >> $GITHUB_OUTPUT
+          else
+            echo "required=false" >> $GITHUB_OUTPUT
+          fi
+
+  # JSON/YAML validation
+  syntax-validation:
+    name: 📝 Syntax Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: pre-validation
+    if: needs.pre-validation.outputs.config-changed == 'true'
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: |
+          npm install -g ajv-cli jsonlint yamllint
+
+      - name: Validate JSON Files
+        run: |
+          echo "🔍 Validating JSON configurations..."
+          find . -name "*.json" -not -path "./node_modules/*" -not -path "./.git/*" | while read -r file; do
+            echo "Validating: $file"
+            jsonlint "$file" || exit 1
+          done
+
+      - name: Validate YAML Files
+        run: |
+          echo "🔍 Validating YAML configurations..."
+          find . -name "*.yml" -o -name "*.yaml" -not -path "./node_modules/*" -not -path "./.git/*" | while read -r file; do
+            echo "Validating: $file"
+            yamllint "$file" || exit 1
+          done
+
+      - name: Schema Validation
+        run: |
+          echo "🔍 Validating against schemas..."
+          ./scripts/validate-schemas.sh
+
+  # MCP server configuration validation
+  mcp-validation:
+    name: 🔌 MCP Configuration Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [pre-validation, syntax-validation]
+    if: needs.pre-validation.outputs.mcp-changed == 'true'
+    
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: |
+          npm ci
+          cd src && npm ci
+
+      - name: Build MCP Components
+        run: |
+          npm run build:mcp
+          npm run test:mcp-config
+
+      - name: Validate MCP Server Connectivity
+        run: |
+          echo "🔌 Testing MCP server configurations..."
+          node scripts/test-mcp-connectivity.js
+
+      - name: Performance Testing
+        run: |
+          echo "⚡ Testing MCP performance..."
+          node scripts/benchmark-mcp-servers.js
+
+  # Security scanning
+  security-scan:
+    name: 🛡️ Security Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: pre-validation
+    if: needs.pre-validation.outputs.security-scan-required == 'true'
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Secret Scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          path: ./
+
+      - name: Security Configuration Audit
+        run: |
+          echo "🔍 Auditing security configurations..."
+          ./scripts/security-audit.sh
+
+      - name: Dependency Security Scan
+        uses: securecodewarrior/github-action-add-sarif@v1
+        with:
+          sarif-file: 'security-scan-results.sarif'
+
+      - name: Docker Security Scan
+        if: contains(github.event.head_commit.modified, '.devcontainer/')
+        run: |
+          echo "🐳 Scanning Docker configurations..."
+          docker run --rm -v $(pwd):/project clair-scanner:latest /project/.devcontainer/
+
+  # Environment validation
+  environment-validation:
+    name: 🌍 Environment Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: [syntax-validation, mcp-validation]
+    if: needs.pre-validation.outputs.env-changed == 'true'
+    
+    strategy:
+      matrix:
+        environment: [development, staging, production]
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Environment
+        run: |
+          echo "🔧 Setting up ${{ matrix.environment }} environment..."
+          cp environments/${{ matrix.environment }}/config/* ./temp-config/
+
+      - name: Validate Environment Configuration
+        run: |
+          echo "✅ Validating ${{ matrix.environment }} configuration..."
+          ./scripts/validate-environment.sh ${{ matrix.environment }}
+
+      - name: Test Environment Deployment
+        run: |
+          echo "🚀 Testing ${{ matrix.environment }} deployment..."
+          ./scripts/test-deployment.sh ${{ matrix.environment }} --dry-run
+
+      - name: Environment Health Check
+        run: |
+          echo "❤️ Running ${{ matrix.environment }} health checks..."
+          ./scripts/health-check.sh ${{ matrix.environment }} --validate-only
+
+  # Integration testing
+  integration-tests:
+    name: 🧪 Integration Testing
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [mcp-validation, environment-validation]
+    
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: claude_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: |
+          npm ci
+          cd src && npm ci
+
+      - name: Run Integration Tests
+        run: |
+          echo "🧪 Running integration tests..."
+          npm run test:integration
+        env:
+          DATABASE_URL: postgresql://postgres:test_password@localhost:5432/claude_test
+          REDIS_URL: redis://localhost:6379
+
+      - name: Test Configuration Sync
+        run: |
+          echo "🔄 Testing configuration synchronization..."
+          npm run test:sync
+
+      - name: Test MCP Integration
+        run: |
+          echo "🔌 Testing MCP server integration..."
+          npm run test:mcp-integration
+
+  # Configuration impact analysis
+  impact-analysis:
+    name: 📊 Impact Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: pre-validation
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Analysis Tools
+        run: |
+          pip install -r scripts/requirements-analysis.txt
+
+      - name: Generate Impact Report
+        run: |
+          echo "📊 Analyzing configuration impact..."
+          python scripts/analyze-config-impact.py \
+            --base ${{ github.event.pull_request.base.sha }} \
+            --head ${{ github.event.pull_request.head.sha }} \
+            --output impact-report.json
+
+      - name: Risk Assessment
+        run: |
+          echo "⚖️ Assessing deployment risk..."
+          python scripts/assess-deployment-risk.py \
+            --impact-report impact-report.json \
+            --output risk-assessment.json
+
+      - name: Comment PR with Analysis
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const impact = JSON.parse(fs.readFileSync('impact-report.json', 'utf8'));
+            const risk = JSON.parse(fs.readFileSync('risk-assessment.json', 'utf8'));
+            
+            const body = `## 📊 Configuration Impact Analysis
+            
+            ### Changes Summary
+            - **Files Modified**: ${impact.files_changed}
+            - **Teams Affected**: ${impact.teams_affected.join(', ')}
+            - **Environments**: ${impact.environments.join(', ')}
+            
+            ### Risk Assessment
+            - **Overall Risk**: ${risk.overall_risk}
+            - **Security Impact**: ${risk.security_impact}
+            - **Performance Impact**: ${risk.performance_impact}
+            
+            ### Recommendations
+            ${risk.recommendations.map(r => `- ${r}`).join('\n')}
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+  # Final validation summary
+  validation-summary:
+    name: ✅ Validation Summary
+    runs-on: ubuntu-latest
+    needs: [syntax-validation, mcp-validation, security-scan, environment-validation, integration-tests, impact-analysis]
+    if: always()
+    
+    steps:
+      - name: Check Validation Results
+        run: |
+          echo "🔍 Validation Summary:"
+          echo "- Syntax Validation: ${{ needs.syntax-validation.result }}"
+          echo "- MCP Validation: ${{ needs.mcp-validation.result }}"
+          echo "- Security Scan: ${{ needs.security-scan.result }}"
+          echo "- Environment Validation: ${{ needs.environment-validation.result }}"
+          echo "- Integration Tests: ${{ needs.integration-tests.result }}"
+          echo "- Impact Analysis: ${{ needs.impact-analysis.result }}"
+
+      - name: Validation Success
+        if: |
+          needs.syntax-validation.result == 'success' &&
+          needs.mcp-validation.result == 'success' &&
+          (needs.security-scan.result == 'success' || needs.security-scan.result == 'skipped') &&
+          needs.environment-validation.result == 'success' &&
+          needs.integration-tests.result == 'success'
+        run: |
+          echo "✅ All validations passed successfully!"
+          echo "Configuration changes are ready for deployment."
+
+      - name: Validation Failure
+        if: |
+          needs.syntax-validation.result == 'failure' ||
+          needs.mcp-validation.result == 'failure' ||
+          needs.security-scan.result == 'failure' ||
+          needs.environment-validation.result == 'failure' ||
+          needs.integration-tests.result == 'failure'
+        run: |
+          echo "❌ Validation failed!"
+          echo "Please review the failed checks and fix the issues."
+          exit 1

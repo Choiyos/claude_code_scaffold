@@ -1,0 +1,386 @@
+# Enhanced .zshrc for Claude Code + SuperClaude + MCP Development Environment
+# This configuration provides a rich development experience with Claude-specific optimizations
+
+# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
+# Initialization code that may require console input (password prompts, [y/n]
+# confirmations, etc.) must go above this block; everything else may go below.
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
+# Path to your oh-my-zsh installation.
+export ZSH="$HOME/.oh-my-zsh"
+
+# Set name of the theme to load
+ZSH_THEME="powerlevel10k/powerlevel10k"
+
+# Uncomment the following line to use case-sensitive completion.
+# CASE_SENSITIVE="true"
+
+# Uncomment the following line to use hyphen-insensitive completion.
+# Case-sensitive completion must be off. _ and - will be interchangeable.
+HYPHEN_INSENSITIVE="true"
+
+# Uncomment one of the following lines to change the auto-update behavior
+zstyle ':omz:update' mode auto      # update automatically without asking
+# zstyle ':omz:update' mode reminder  # just remind me to update when it's time
+
+# Uncomment the following line to change how often to auto-update (in days).
+zstyle ':omz:update' frequency 13
+
+# Uncomment the following line if pasting URLs and other text is messed up.
+# DISABLE_MAGIC_FUNCTIONS="true"
+
+# Uncomment the following line to disable colors in ls.
+# DISABLE_LS_COLORS="true"
+
+# Uncomment the following line to disable auto-setting terminal title.
+# DISABLE_AUTO_TITLE="true"
+
+# Uncomment the following line to enable command auto-correction.
+ENABLE_CORRECTION="true"
+
+# Uncomment the following line to display red dots whilst waiting for completion.
+COMPLETION_WAITING_DOTS="true"
+
+# Uncomment the following line if you want to disable marking untracked files
+# under VCS as dirty. This makes repository status check for large repositories
+# much, much faster.
+# DISABLE_UNTRACKED_FILES_DIRTY="true"
+
+# Uncomment the following line if you want to change the command execution time
+# stamp shown in the history command output.
+HIST_STAMPS="yyyy-mm-dd"
+
+# Would you like to use another custom folder than $ZSH/custom?
+# ZSH_CUSTOM=/path/to/new-custom-folder
+
+# Which plugins would you like to load?
+# Standard plugins can be found in $ZSH/plugins/
+# Custom plugins may be added to $ZSH_CUSTOM/plugins/
+plugins=(
+    # Core functionality
+    git
+    zsh-autosuggestions
+    zsh-syntax-highlighting
+    zsh-completions
+    
+    # Development tools
+    docker
+    docker-compose
+    node
+    npm
+    python
+    pip
+    
+    # Utilities
+    history
+    sudo
+    command-not-found
+    colored-man-pages
+    
+    # Claude-specific (if available)
+    # claude-code
+)
+
+# Load Oh My Zsh
+source $ZSH/oh-my-zsh.sh
+
+# User configuration
+
+# Export environment variables
+export LANG=en_US.UTF-8
+export EDITOR='code'
+export BROWSER='code --new-window'
+
+# Preferred editor for local and remote sessions
+if [[ -n $SSH_CONNECTION ]]; then
+  export EDITOR='vim'
+fi
+
+# Claude Code environment variables
+export CLAUDE_ENV_MODE="development"
+export CLAUDE_CONFIG_DIR="$HOME/.claude"
+export CLAUDE_WORKSPACE="/workspace"
+export CLAUDE_LOG_LEVEL="${CLAUDE_LOG_LEVEL:-info}"
+
+# Development paths
+export PATH="$HOME/.local/bin:$PATH"
+export PATH="/usr/local/bin:$PATH"
+export PYTHONPATH="/workspace:$PYTHONPATH"
+export NODE_PATH="/usr/lib/node_modules:$NODE_PATH"
+
+# History configuration
+export HISTSIZE=50000
+export SAVEHIST=50000
+export HISTFILE="$HOME/.claude/logs/zsh_history"
+setopt EXTENDED_HISTORY
+setopt SHARE_HISTORY
+setopt APPEND_HISTORY
+setopt INC_APPEND_HISTORY
+setopt HIST_EXPIRE_DUPS_FIRST
+setopt HIST_IGNORE_DUPS
+setopt HIST_IGNORE_ALL_DUPS
+setopt HIST_FIND_NO_DUPS
+setopt HIST_IGNORE_SPACE
+setopt HIST_SAVE_NO_DUPS
+setopt HIST_REDUCE_BLANKS
+
+# Zsh options for better development experience
+setopt AUTO_CD                 # Auto change to directory without cd
+setopt GLOB_DOTS               # Include dotfiles in glob patterns
+setopt NO_CASE_GLOB            # Case insensitive globbing
+setopt NUMERIC_GLOB_SORT       # Sort filenames numerically when appropriate
+setopt EXTENDED_GLOB           # Extended globbing patterns
+setopt INTERACTIVE_COMMENTS    # Allow comments in interactive shell
+
+# Completion configuration
+autoload -Uz compinit
+compinit
+
+# Case insensitive completion
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|=*' 'l:|=* r:|=*'
+
+# Colored completion
+zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+
+# Menu selection
+zstyle ':completion:*' menu select
+
+# Group results by category
+zstyle ':completion:*' group-name ''
+
+# Describe options in full
+zstyle ':completion:*' verbose yes
+
+# Load custom aliases and functions
+if [ -f "$HOME/.claude/shortcuts/services.sh" ]; then
+    source "$HOME/.claude/shortcuts/services.sh"
+fi
+
+if [ -f "$HOME/.claude/shortcuts/projects.sh" ]; then
+    source "$HOME/.claude/shortcuts/projects.sh"
+fi
+
+# Load development environment variables
+if [ -f "$HOME/.claude/config/development.env" ]; then
+    set -a
+    source "$HOME/.claude/config/development.env"
+    set +a
+fi
+
+# Load additional aliases
+alias l='ls -CF'
+alias la='ls -A'
+alias ll='ls -alF'
+alias ls='ls --color=auto'
+
+# Directory navigation
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+alias .....='cd ../../../..'
+
+# Git aliases (enhanced)
+alias g='git'
+alias ga='git add'
+alias gaa='git add --all'
+alias gb='git branch'
+alias gba='git branch -a'
+alias gbd='git branch -d'
+alias gc='git commit -v'
+alias gca='git commit -v -a'
+alias gcm='git commit -m'
+alias gco='git checkout'
+alias gcb='git checkout -b'
+alias gd='git diff'
+alias gf='git fetch'
+alias gl='git log --oneline --graph --decorate'
+alias gla='git log --oneline --graph --decorate --all'
+alias gp='git push'
+alias gpl='git pull'
+alias gs='git status'
+alias gst='git stash'
+alias gstp='git stash pop'
+
+# Docker aliases (enhanced)
+alias d='docker'
+alias dc='docker-compose'
+alias dps='docker ps'
+alias dpa='docker ps -a'
+alias di='docker images'
+alias dlog='docker logs'
+alias dlogf='docker logs -f'
+alias dexec='docker exec -it'
+alias dstop='docker stop'
+alias dstart='docker start'
+alias drm='docker rm'
+alias drmi='docker rmi'
+alias dprune='docker system prune -af'
+
+# Claude-specific aliases
+alias claude-status='cat ~/.claude/config/environment.json | jq .'
+alias claude-logs='tail -f ~/.claude/logs/*.log 2>/dev/null || echo "No log files found"'
+alias claude-config='code ~/.claude/config/'
+alias claude-env='source ~/.claude/config/development.env'
+alias claude-init='~/.devcontainer/scripts/manage-env.sh claude-init'
+alias claude-health='~/.devcontainer/scripts/manage-env.sh claude-health'
+
+# Development aliases
+alias py='python3'
+alias pip='pip3'
+alias venv='python3 -m venv'
+alias serve='python3 -m http.server'
+
+# Node.js aliases
+alias nr='npm run'
+alias ni='npm install'
+alias nid='npm install --save-dev'
+alias ns='npm start'
+alias nt='npm test'
+alias nb='npm run build'
+alias nw='npm run watch'
+
+# Utility aliases
+alias h='history'
+alias j='jobs -l'
+alias grep='grep --color=auto'
+alias fgrep='fgrep --color=auto'
+alias egrep='egrep --color=auto'
+alias tree='tree -C'
+alias df='df -h'
+alias du='du -h'
+alias free='free -h'
+
+# Quick navigation to common directories
+alias workspace='cd /workspace'
+alias claude='cd ~/.claude'
+alias config='cd ~/.claude/config'
+alias logs='cd ~/.claude/logs'
+alias scripts='cd ~/.devcontainer/scripts'
+
+# Development server shortcuts
+dev-start() {
+    if [ -f "package.json" ]; then
+        echo "🚀 Starting Node.js development server..."
+        npm run dev || npm start
+    elif [ -f "manage.py" ]; then
+        echo "🚀 Starting Django development server..."
+        python manage.py runserver
+    elif [ -f "main.py" ]; then
+        echo "🚀 Starting Python application..."
+        python main.py
+    elif [ -f "app.py" ]; then
+        echo "🚀 Starting Flask application..."
+        python app.py
+    else
+        echo "❌ No development server configuration found"
+        echo "💡 Available files:"
+        ls -la | grep -E '\.(py|js|json|ts)$'
+    fi
+}
+
+# Testing shortcuts
+test-run() {
+    if [ -f "package.json" ]; then
+        echo "🧪 Running Node.js tests..."
+        npm test
+    elif [ -f "pytest.ini" ] || [ -f "pyproject.toml" ]; then
+        echo "🧪 Running Python tests with pytest..."
+        pytest
+    elif [ -f "manage.py" ]; then
+        echo "🧪 Running Django tests..."
+        python manage.py test
+    elif [ -f "test.py" ]; then
+        echo "🧪 Running Python tests..."
+        python test.py
+    else
+        echo "❌ No test configuration found"
+        echo "💡 Available test files:"
+        ls -la | grep -E 'test.*\.(py|js|ts)$' || echo "No test files found"
+    fi
+}
+
+# Project initialization shortcuts
+init-node() {
+    local name=${1:-"my-app"}
+    echo "📦 Initializing Node.js project: $name"
+    mkdir -p "$name"
+    cd "$name"
+    npm init -y
+    echo "✅ Node.js project initialized"
+}
+
+init-python() {
+    local name=${1:-"my-app"}
+    echo "🐍 Initializing Python project: $name"
+    mkdir -p "$name"
+    cd "$name"
+    python3 -m venv venv
+    source venv/bin/activate
+    echo "# $name" > README.md
+    echo "__version__ = '0.1.0'" > __init__.py
+    touch requirements.txt
+    echo "✅ Python project initialized"
+}
+
+# Quick file operations
+mkcd() {
+    mkdir -p "$1" && cd "$1"
+}
+
+extract() {
+    if [ -f "$1" ]; then
+        case $1 in
+            *.tar.bz2)   tar xjf "$1"     ;;
+            *.tar.gz)    tar xzf "$1"     ;;
+            *.bz2)       bunzip2 "$1"     ;;
+            *.rar)       unrar x "$1"     ;;
+            *.gz)        gunzip "$1"      ;;
+            *.tar)       tar xf "$1"      ;;
+            *.tbz2)      tar xjf "$1"     ;;
+            *.tgz)       tar xzf "$1"     ;;
+            *.zip)       unzip "$1"       ;;
+            *.Z)         uncompress "$1"  ;;
+            *.7z)        7z x "$1"        ;;
+            *)           echo "'$1' cannot be extracted via extract()" ;;
+        esac
+    else
+        echo "'$1' is not a valid file"
+    fi
+}
+
+# Load custom functions if they exist
+if [ -d "$HOME/.claude/functions" ]; then
+    for function_file in "$HOME/.claude/functions"/*.zsh; do
+        if [ -r "$function_file" ]; then
+            source "$function_file"
+        fi
+    done
+fi
+
+# Load Powerlevel10k configuration
+[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+
+# Initialize additional tools if available
+if command -v zoxide >/dev/null 2>&1; then
+    eval "$(zoxide init zsh)"
+fi
+
+# Display welcome message on new sessions
+if [ ! -f "/tmp/.claude-zsh-welcome-shown" ]; then
+    echo ""
+    echo "🧠 Claude Code + SuperClaude + MCP Development Environment"
+    echo "🚀 Ready for development!"
+    echo ""
+    echo "💡 Quick commands:"
+    echo "   dev-start     - Start development server"
+    echo "   test-run      - Run tests"
+    echo "   claude-health - Check environment health"
+    echo "   manage-env.sh - Environment management"
+    echo ""
+    touch "/tmp/.claude-zsh-welcome-shown"
+fi
+
+# Enable command substitution in prompt
+setopt PROMPT_SUBST

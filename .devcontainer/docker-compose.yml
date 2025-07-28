@@ -1,0 +1,369 @@
+version: '3.8'
+
+# Docker Compose stack for Claude Code + SuperClaude + MCP Development Environment
+# Includes all services needed for development, testing, and monitoring
+
+services:
+  # Main development container
+  devcontainer:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+      target: final
+    volumes:
+      # Mount workspace with cached consistency for better performance
+      - ../:/workspace:cached
+      # Mount user directories for configuration persistence
+      - ${HOME}/.ssh:/home/vscode/.ssh:ro
+      - ${HOME}/.gitconfig:/home/vscode/.gitconfig:ro
+      - claude-home:/home/vscode/.claude
+      # Docker socket for Docker-in-Docker functionality
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Node modules cache for faster installs
+      - node-modules-cache:/workspace/node_modules
+      # Python cache for faster installs
+      - python-cache:/home/vscode/.cache/pip
+    environment:
+      # Development environment variables
+      - NODE_ENV=development
+      - PYTHONPATH=/workspace
+      - CLAUDE_ENV_MODE=development
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      # Database connection strings
+      - DATABASE_URL=postgresql://claude_user:claude_password@postgres:5432/claude_development
+      - REDIS_URL=redis://redis:6379/0
+      # API service URLs
+      - API_GATEWAY_URL=http://localhost:3000
+      - ENVIRONMENT_CONTROLLER_URL=http://localhost:3001
+      - MCP_ORCHESTRATOR_URL=http://localhost:3002
+      - CONFIGURATION_MANAGER_URL=http://localhost:3003
+      # Monitoring URLs
+      - PROMETHEUS_URL=http://prometheus:9090
+      - GRAFANA_URL=http://grafana:3000
+    command: sleep infinity
+    networks:
+      - claude-dev-network
+    depends_on:
+      - postgres
+      - redis
+      - prometheus
+    restart: unless-stopped
+    # Resource limits for development
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '2.0'
+        reservations:
+          memory: 2G
+          cpus: '1.0'
+
+  # PostgreSQL database for persistent data storage
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      # Database configuration
+      POSTGRES_DB: claude_development
+      POSTGRES_USER: claude_user
+      POSTGRES_PASSWORD: claude_password
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=peer"
+      # Performance tuning for development
+      POSTGRES_SHARED_PRELOAD_LIBRARIES: pg_stat_statements
+    ports:
+      - "5432:5432"
+    volumes:
+      # Persistent data storage
+      - postgres-data:/var/lib/postgresql/data
+      # Initialization scripts
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./scripts/init-schema.sql:/docker-entrypoint-initdb.d/02-schema.sql:ro
+      - ./scripts/init-data.sql:/docker-entrypoint-initdb.d/03-data.sql:ro
+      # Custom PostgreSQL configuration
+      - ./config/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+    networks:
+      - claude-dev-network
+    restart: unless-stopped
+    # Health check for database readiness
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U claude_user -d claude_development"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+  # Redis cache and session storage
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      # Persistent Redis data
+      - redis-data:/data
+      # Redis configuration
+      - ./config/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    networks:
+      - claude-dev-network
+    restart: unless-stopped
+    # Health check for Redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+
+  # Prometheus monitoring and metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      # Prometheus configuration
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+      # Persistent metrics data
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+    networks:
+      - claude-dev-network
+    restart: unless-stopped
+    # Health check for Prometheus
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+  # Grafana dashboard and visualization
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"  # Using 3001 to avoid conflict with main app
+    environment:
+      # Grafana configuration
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+      - GF_SECURITY_DISABLE_GRAVATAR=true
+      - GF_ANALYTICS_REPORTING_ENABLED=false
+      - GF_ANALYTICS_CHECK_FOR_UPDATES=false
+    volumes:
+      # Persistent Grafana data
+      - grafana-data:/var/lib/grafana
+      # Dashboard provisioning
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - claude-dev-network
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    # Health check for Grafana
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+
+  # Node Exporter for system metrics
+  node-exporter:
+    image: prom/node-exporter:latest
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - claude-dev-network
+    restart: unless-stopped
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.1'
+
+  # cAdvisor for container metrics
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    privileged: true
+    devices:
+      - /dev/kmsg
+    networks:
+      - claude-dev-network
+    restart: unless-stopped
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 200M
+          cpus: '0.15'
+
+  # Jaeger for distributed tracing (optional, for advanced debugging)
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686"
+      - "14268:14268"
+      - "14250:14250"
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    networks:
+      - claude-dev-network
+    restart: unless-stopped
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+
+  # Mailhog for email testing (development only)
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    networks:
+      - claude-dev-network
+    restart: unless-stopped
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: '0.1'
+
+  # MinIO for S3-compatible object storage (development)
+  minio:
+    image: quay.io/minio/minio:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=claude_admin
+      - MINIO_ROOT_PASSWORD=claude_password_123
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - claude-dev-network
+    restart: unless-stopped
+    # Health check for MinIO
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      start_period: 60s
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+# Named volumes for persistent data
+volumes:
+  # Database volumes
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+  
+  # Monitoring volumes
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+  
+  # Application volumes
+  claude-home:
+    driver: local
+  node-modules-cache:
+    driver: local
+  python-cache:
+    driver: local
+  
+  # Storage volumes
+  minio-data:
+    driver: local
+
+# Network configuration
+networks:
+  claude-dev-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+    driver_opts:
+      com.docker.network.bridge.name: claude-dev-br0
+      com.docker.network.bridge.enable_icc: "true"
+      com.docker.network.bridge.enable_ip_masquerade: "true"
+      com.docker.network.bridge.host_binding_ipv4: "0.0.0.0"
+
+# Development-specific configurations
+x-development-defaults: &development-defaults
+  restart: unless-stopped
+  networks:
+    - claude-dev-network
+
+x-logging-defaults: &logging-defaults
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+# Apply logging to all services
+x-common-config: &common-config
+  <<: *development-defaults
+  <<: *logging-defaults

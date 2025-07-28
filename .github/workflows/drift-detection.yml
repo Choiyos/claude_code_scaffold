@@ -1,0 +1,437 @@
+# Configuration Drift Detection & Remediation
+# Continuous monitoring and automated remediation of configuration drift
+
+name: 🔍 Drift Detection & Remediation
+
+on:
+  schedule:
+    # Run every 2 hours during business hours (UTC)
+    - cron: '0 8-18/2 * * 1-5'
+    # Run every 6 hours during off-hours and weekends
+    - cron: '0 0,6,12,18 * * 0,6'
+  
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment for drift detection'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - development
+          - staging
+          - production
+      auto_remediate:
+        description: 'Automatically remediate detected drift'
+        required: false
+        default: false
+        type: boolean
+      drift_threshold:
+        description: 'Drift threshold percentage (1-100)'
+        required: false
+        default: '5'
+        type: string
+
+env:
+  DRIFT_THRESHOLD: '5'
+  MAX_AUTO_REMEDIATION: '10'
+  MONITORING_INTERVAL: '120'
+
+jobs:
+  # Drift detection setup
+  detection-setup:
+    name: 🎯 Detection Setup
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      environments: ${{ steps.setup.outputs.environments }}
+      auto-remediate: ${{ steps.setup.outputs.auto-remediate }}
+      threshold: ${{ steps.setup.outputs.threshold }}
+    
+    steps:
+      - name: Setup Detection Parameters
+        id: setup
+        run: |
+          # Determine environments to check
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            if [[ "${{ github.event.inputs.environment }}" == "all" ]]; then
+              echo "environments=[\"development\",\"staging\",\"production\"]" >> $GITHUB_OUTPUT
+            else
+              echo "environments=[\"${{ github.event.inputs.environment }}\"]" >> $GITHUB_OUTPUT
+            fi
+            echo "auto-remediate=${{ github.event.inputs.auto_remediate }}" >> $GITHUB_OUTPUT
+            echo "threshold=${{ github.event.inputs.drift_threshold }}" >> $GITHUB_OUTPUT
+          else
+            # Scheduled run - check all environments
+            echo "environments=[\"development\",\"staging\",\"production\"]" >> $GITHUB_OUTPUT
+            echo "auto-remediate=false" >> $GITHUB_OUTPUT
+            echo "threshold=${{ env.DRIFT_THRESHOLD }}" >> $GITHUB_OUTPUT
+          fi
+
+  # Multi-environment drift detection
+  detect-drift:
+    name: 🔍 Detect Drift (${{ matrix.environment }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: detection-setup
+    strategy:
+      matrix:
+        environment: ${{ fromJson(needs.detection-setup.outputs.environments) }}
+      fail-fast: false
+    
+    outputs:
+      drift-detected: ${{ steps.detection.outputs.drift-detected }}
+      drift-percentage: ${{ steps.detection.outputs.drift-percentage }}
+      critical-drift: ${{ steps.detection.outputs.critical-drift }}
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Detection Environment
+        run: |
+          pip install -r scripts/requirements-drift.txt
+          ./scripts/setup-drift-detection.sh ${{ matrix.environment }}
+
+      - name: Baseline Configuration Fetch
+        run: |
+          echo "📋 Fetching baseline configuration for ${{ matrix.environment }}..."
+          ./scripts/fetch-baseline-config.sh ${{ matrix.environment }}
+
+      - name: Current State Analysis
+        run: |
+          echo "🔍 Analyzing current ${{ matrix.environment }} state..."
+          ./scripts/analyze-current-state.sh ${{ matrix.environment }} > current-state.json
+
+      - name: Drift Detection Analysis
+        id: detection
+        run: |
+          echo "🔍 Detecting configuration drift for ${{ matrix.environment }}..."
+          
+          DRIFT_RESULT=$(./scripts/detect-drift.sh ${{ matrix.environment }} \
+            --baseline baseline-config.json \
+            --current current-state.json \
+            --threshold ${{ needs.detection-setup.outputs.threshold }} \
+            --output drift-report-${{ matrix.environment }}.json)
+          
+          echo "drift-detected=$(echo $DRIFT_RESULT | jq -r '.drift_detected')" >> $GITHUB_OUTPUT
+          echo "drift-percentage=$(echo $DRIFT_RESULT | jq -r '.drift_percentage')" >> $GITHUB_OUTPUT
+          echo "critical-drift=$(echo $DRIFT_RESULT | jq -r '.critical_drift')" >> $GITHUB_OUTPUT
+
+      - name: Categorize Drift Types
+        if: steps.detection.outputs.drift-detected == 'true'
+        run: |
+          echo "📊 Categorizing drift types for ${{ matrix.environment }}..."
+          ./scripts/categorize-drift.sh \
+            --drift-report drift-report-${{ matrix.environment }}.json \
+            --output categorized-drift-${{ matrix.environment }}.json
+
+      - name: Generate Drift Dashboard
+        run: |
+          echo "📊 Generating drift dashboard for ${{ matrix.environment }}..."
+          ./scripts/generate-drift-dashboard.sh \
+            --environment ${{ matrix.environment }} \
+            --drift-report drift-report-${{ matrix.environment }}.json \
+            --output dashboard-${{ matrix.environment }}.html
+
+      - name: Upload Drift Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: drift-analysis-${{ matrix.environment }}
+          path: |
+            drift-report-${{ matrix.environment }}.json
+            categorized-drift-${{ matrix.environment }}.json
+            dashboard-${{ matrix.environment }}.html
+          retention-days: 30
+
+      - name: Critical Drift Alert
+        if: steps.detection.outputs.critical-drift == 'true'
+        run: |
+          echo "🚨 Critical drift detected in ${{ matrix.environment }}!"
+          ./scripts/send-critical-alert.sh ${{ matrix.environment }} \
+            --drift-percentage ${{ steps.detection.outputs.drift-percentage }}
+
+  # Drift analysis and correlation
+  analyze-drift:
+    name: 📊 Analyze Drift Patterns
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [detection-setup, detect-drift]
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download All Drift Reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: drift-analysis-*
+          merge-multiple: true
+
+      - name: Cross-Environment Analysis
+        run: |
+          echo "🔄 Analyzing drift patterns across environments..."
+          ./scripts/analyze-cross-environment-drift.sh \
+            --reports "drift-report-*.json" \
+            --output cross-env-analysis.json
+
+      - name: Trend Analysis
+        run: |
+          echo "📈 Analyzing drift trends..."
+          ./scripts/analyze-drift-trends.sh \
+            --historical-data \
+            --timeframe 30d \
+            --output trend-analysis.json
+
+      - name: Root Cause Analysis
+        run: |
+          echo "🔍 Performing root cause analysis..."
+          ./scripts/root-cause-analysis.sh \
+            --cross-env cross-env-analysis.json \
+            --trends trend-analysis.json \
+            --output root-cause-analysis.json
+
+      - name: Generate Recommendations
+        run: |
+          echo "💡 Generating remediation recommendations..."
+          ./scripts/generate-recommendations.sh \
+            --root-cause root-cause-analysis.json \
+            --output recommendations.json
+
+      - name: Upload Analysis Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: drift-analysis-consolidated
+          path: |
+            cross-env-analysis.json
+            trend-analysis.json
+            root-cause-analysis.json
+            recommendations.json
+          retention-days: 90
+
+  # Automated remediation
+  auto-remediate:
+    name: 🔧 Automated Remediation (${{ matrix.environment }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: [detection-setup, detect-drift, analyze-drift]
+    if: |
+      needs.detection-setup.outputs.auto-remediate == 'true' && 
+      needs.detect-drift.outputs.drift-detected == 'true' &&
+      needs.detect-drift.outputs.critical-drift == 'false'
+    
+    strategy:
+      matrix:
+        environment: ${{ fromJson(needs.detection-setup.outputs.environments) }}
+      fail-fast: false
+    
+    environment: ${{ matrix.environment }}
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download Drift Analysis
+        uses: actions/download-artifact@v4
+        with:
+          name: drift-analysis-${{ matrix.environment }}
+
+      - name: Download Recommendations
+        uses: actions/download-artifact@v4
+        with:
+          name: drift-analysis-consolidated
+
+      - name: Remediation Feasibility Check
+        id: feasibility
+        run: |
+          echo "🔍 Checking remediation feasibility for ${{ matrix.environment }}..."
+          
+          FEASIBLE=$(./scripts/check-remediation-feasibility.sh ${{ matrix.environment }} \
+            --drift-report drift-report-${{ matrix.environment }}.json \
+            --recommendations recommendations.json \
+            --max-changes ${{ env.MAX_AUTO_REMEDIATION }})
+          
+          echo "feasible=$FEASIBLE" >> $GITHUB_OUTPUT
+
+      - name: Create Remediation Plan
+        if: steps.feasibility.outputs.feasible == 'true'
+        run: |
+          echo "📋 Creating remediation plan for ${{ matrix.environment }}..."
+          ./scripts/create-remediation-plan.sh ${{ matrix.environment }} \
+            --drift-report drift-report-${{ matrix.environment }}.json \
+            --recommendations recommendations.json \
+            --output remediation-plan-${{ matrix.environment }}.json
+
+      - name: Backup Current Configuration
+        if: steps.feasibility.outputs.feasible == 'true'
+        run: |
+          echo "💾 Backing up current configuration..."
+          ./scripts/backup-config.sh ${{ matrix.environment }} \
+            --type pre-remediation \
+            --timestamp $(date +%Y%m%d_%H%M%S)
+
+      - name: Execute Remediation
+        if: steps.feasibility.outputs.feasible == 'true'
+        run: |
+          echo "🔧 Executing automated remediation for ${{ matrix.environment }}..."
+          ./scripts/execute-remediation.sh ${{ matrix.environment }} \
+            --plan remediation-plan-${{ matrix.environment }}.json \
+            --validate-each-step \
+            --rollback-on-failure
+
+      - name: Validate Remediation
+        if: steps.feasibility.outputs.feasible == 'true'
+        run: |
+          echo "✅ Validating remediation results..."
+          ./scripts/validate-remediation.sh ${{ matrix.environment }} \
+            --before-state current-state.json \
+            --remediation-plan remediation-plan-${{ matrix.environment }}.json
+
+      - name: Post-Remediation Drift Check
+        if: steps.feasibility.outputs.feasible == 'true'
+        run: |
+          echo "🔍 Running post-remediation drift check..."
+          ./scripts/detect-drift.sh ${{ matrix.environment }} \
+            --baseline baseline-config.json \
+            --output post-remediation-drift-${{ matrix.environment }}.json
+
+      - name: Remediation Report
+        if: steps.feasibility.outputs.feasible == 'true'
+        run: |
+          echo "📋 Generating remediation report..."
+          ./scripts/generate-remediation-report.sh ${{ matrix.environment }} \
+            --pre-drift drift-report-${{ matrix.environment }}.json \
+            --post-drift post-remediation-drift-${{ matrix.environment }}.json \
+            --plan remediation-plan-${{ matrix.environment }}.json \
+            --output remediation-report-${{ matrix.environment }}.json
+
+      - name: Upload Remediation Results
+        if: steps.feasibility.outputs.feasible == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: remediation-results-${{ matrix.environment }}
+          path: |
+            remediation-plan-${{ matrix.environment }}.json
+            post-remediation-drift-${{ matrix.environment }}.json
+            remediation-report-${{ matrix.environment }}.json
+          retention-days: 60
+
+  # Manual intervention alerts
+  manual-intervention:
+    name: 🚨 Manual Intervention Required
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [detection-setup, detect-drift, analyze-drift]
+    if: |
+      needs.detect-drift.outputs.critical-drift == 'true' ||
+      (needs.detect-drift.outputs.drift-detected == 'true' && needs.detection-setup.outputs.auto-remediate == 'false')
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download Analysis Results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: drift-analysis-*
+          merge-multiple: true
+
+      - name: Create Intervention Ticket
+        run: |
+          echo "🎫 Creating manual intervention ticket..."
+          ./scripts/create-intervention-ticket.sh \
+            --drift-reports "drift-report-*.json" \
+            --recommendations recommendations.json \
+            --priority ${{ needs.detect-drift.outputs.critical-drift == 'true' && 'critical' || 'high' }}
+
+      - name: Send Alert Notifications
+        run: |
+          echo "📢 Sending intervention alerts..."
+          ./scripts/send-intervention-alerts.sh \
+            --drift-detected ${{ needs.detect-drift.outputs.drift-detected }} \
+            --critical-drift ${{ needs.detect-drift.outputs.critical-drift }} \
+            --drift-percentage ${{ needs.detect-drift.outputs.drift-percentage }}
+
+      - name: Update Status Dashboard
+        run: |
+          echo "📊 Updating status dashboard..."
+          ./scripts/update-drift-dashboard.sh \
+            --status manual-intervention-required \
+            --drift-percentage ${{ needs.detect-drift.outputs.drift-percentage }}
+
+  # Monitoring and metrics
+  update-metrics:
+    name: 📈 Update Metrics
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [detect-drift, analyze-drift, auto-remediate, manual-intervention]
+    if: always()
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Collect Metrics Data
+        run: |
+          echo "📊 Collecting drift metrics..."
+          ./scripts/collect-drift-metrics.sh \
+            --detection-results '${{ toJson(needs.detect-drift.outputs) }}' \
+            --remediation-results '${{ toJson(needs.auto-remediate.result) }}'
+
+      - name: Update Prometheus Metrics
+        run: |
+          echo "📈 Updating Prometheus metrics..."
+          ./scripts/update-prometheus-metrics.sh \
+            --metric-type drift-detection \
+            --timestamp $(date +%s)
+
+      - name: Update Historical Database
+        run: |
+          echo "🗄️ Updating historical drift database..."
+          ./scripts/update-drift-history.sh \
+            --detection-date $(date +%Y-%m-%d) \
+            --results-summary metrics-summary.json
+
+      - name: Generate Performance Report
+        run: |
+          echo "📋 Generating performance report..."
+          ./scripts/generate-performance-report.sh \
+            --timeframe 7d \
+            --output weekly-drift-report.json
+
+  # Cleanup and archival
+  cleanup:
+    name: 🧹 Cleanup & Archival
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [detect-drift, analyze-drift, auto-remediate, manual-intervention, update-metrics]
+    if: always()
+    
+    steps:
+      - name: Cleanup Temporary Resources
+        run: |
+          echo "🧹 Cleaning up temporary resources..."
+          ./scripts/cleanup-drift-resources.sh
+
+      - name: Archive Long-term Data
+        run: |
+          echo "📦 Archiving long-term data..."
+          ./scripts/archive-drift-data.sh \
+            --retention-days 365 \
+            --compress
+
+      - name: Rotate Old Logs
+        run: |
+          echo "🔄 Rotating old drift logs..."
+          ./scripts/rotate-drift-logs.sh \
+            --keep-days 30
+
+      - name: Final Status Update
+        run: |
+          echo "✅ Drift detection cycle completed"
+          echo "Summary:"
+          echo "- Drift Detected: ${{ needs.detect-drift.outputs.drift-detected }}"
+          echo "- Critical Drift: ${{ needs.detect-drift.outputs.critical-drift }}"
+          echo "- Auto Remediation: ${{ needs.auto-remediate.result }}"
+          echo "- Manual Intervention: ${{ needs.manual-intervention.result }}"

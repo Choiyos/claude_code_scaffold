@@ -1,0 +1,180 @@
+# Prometheus alerting rules for Claude Code + SuperClaude + MCP Development Environment
+# Development-focused alerts for service health and resource usage
+
+groups:
+  - name: development.rules
+    rules:
+      # Service availability alerts
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "Service {{ $labels.job }} has been down for more than 1 minute."
+
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate on {{ $labels.job }}"
+          description: "Error rate is {{ $value }} errors per second on {{ $labels.job }}."
+
+  - name: system.rules
+    rules:
+      # System resource alerts
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is above 80% for more than 5 minutes on {{ $labels.instance }}."
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is above 85% for more than 5 minutes on {{ $labels.instance }}."
+
+      - alert: DiskSpaceRunningOut
+        expr: (1 - (node_filesystem_avail_bytes{fstype!="tmpfs"} / node_filesystem_size_bytes{fstype!="tmpfs"})) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Disk space running out on {{ $labels.instance }}"
+          description: "Disk usage is above 85% on {{ $labels.device }} at {{ $labels.instance }}."
+
+  - name: containers.rules
+    rules:
+      # Container-specific alerts
+      - alert: ContainerHighCPUUsage
+        expr: rate(container_cpu_usage_seconds_total{container!=""}[5m]) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage in container {{ $labels.name }}"
+          description: "Container {{ $labels.name }} is using {{ $value }}% CPU for more than 5 minutes."
+
+      - alert: ContainerHighMemoryUsage
+        expr: (container_memory_usage_bytes{container!=""} / container_spec_memory_limit_bytes{container!=""}) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage in container {{ $labels.name }}"
+          description: "Container {{ $labels.name }} is using {{ $value }}% of its memory limit for more than 5 minutes."
+
+      - alert: ContainerRestarting
+        expr: rate(container_start_time_seconds{container!=""}[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container {{ $labels.name }} is restarting"
+          description: "Container {{ $labels.name }} has restarted {{ $value }} times in the last 5 minutes."
+
+  - name: database.rules
+    rules:
+      # Database-specific alerts (when exporters are added)
+      - alert: PostgreSQLDown
+        expr: pg_up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "PostgreSQL database has been down for more than 1 minute."
+
+      - alert: RedisDown
+        expr: redis_up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis is down"
+          description: "Redis server has been down for more than 1 minute."
+
+      - alert: DatabaseConnectionsHigh
+        expr: pg_stat_database_numbackends / pg_settings_max_connections * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High number of database connections"
+          description: "PostgreSQL is using {{ $value }}% of available connections."
+
+  - name: claude.rules
+    rules:
+      # Claude-specific application alerts
+      - alert: ClaudeServiceUnhealthy
+        expr: claude_service_health_status != 1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Claude service {{ $labels.service }} is unhealthy"
+          description: "Claude service {{ $labels.service }} has been unhealthy for more than 2 minutes."
+
+      - alert: MCPOrchestratorDown
+        expr: up{job="mcp-orchestrator"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "MCP Orchestrator is down"
+          description: "MCP Orchestrator service has been down for more than 1 minute."
+
+      - alert: EnvironmentControllerDown
+        expr: up{job="environment-controller"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Environment Controller is down"
+          description: "Environment Controller service has been down for more than 1 minute."
+
+      - alert: ConfigManagerDown
+        expr: up{job="config-manager"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Configuration Manager is down"
+          description: "Configuration Manager service has been down for more than 1 minute."
+
+  - name: development.rules
+    rules:
+      # Development-specific rules for aggregated metrics
+      - record: claude:service_availability:rate5m
+        expr: avg(up{job=~"claude.*|mcp.*|environment.*|config.*"}) by (job)
+
+      - record: claude:request_rate:rate5m
+        expr: sum(rate(http_requests_total[5m])) by (job, method, status)
+
+      - record: claude:error_rate:rate5m
+        expr: sum(rate(http_requests_total{status=~"5.."}[5m])) by (job) / sum(rate(http_requests_total[5m])) by (job)
+
+      - record: claude:response_time:p95:rate5m
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (job, le))
+
+      - record: node:cpu_utilization:rate5m
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
+
+      - record: node:memory_utilization:rate5m
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100
+
+      - record: container:cpu_utilization:rate5m
+        expr: rate(container_cpu_usage_seconds_total{container!=""}[5m]) * 100
+
+      - record: container:memory_utilization:rate5m
+        expr: (container_memory_usage_bytes{container!=""} / container_spec_memory_limit_bytes{container!=""}) * 100

@@ -1,0 +1,35 @@
+# Grafana dashboard provisioning configuration for Claude Code + SuperClaude + MCP Development Environment
+# Automatically loads dashboards for development monitoring
+
+apiVersion: 1
+
+providers:
+  - name: 'Claude Development Dashboards'
+    orgId: 1
+    folder: 'Claude Code'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards
+
+  - name: 'System Monitoring'
+    orgId: 1
+    folder: 'System'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/system
+
+  - name: 'Application Monitoring'
+    orgId: 1
+    folder: 'Applications'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/applications

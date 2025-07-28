@@ -1,0 +1,130 @@
+# Prometheus configuration for Claude Code + SuperClaude + MCP Development Environment
+# Monitors development services and provides metrics for Grafana dashboards
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    environment: 'claude-development'
+    project: 'claude-code-superclaude-mcp'
+
+# Rule files specify a list of globs. Rules and alerts are read from
+# all matching files.
+rule_files:
+  - "alert_rules.yml"
+
+# Alertmanager configuration (optional for development)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets:
+#           - alertmanager:9093
+
+# A scrape configuration containing exactly one endpoint to scrape:
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Node Exporter for system metrics
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  # cAdvisor for container metrics
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  # PostgreSQL metrics (if postgres_exporter is added)
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:5432']  # Will need postgres_exporter
+    scrape_interval: 30s
+    metrics_path: /metrics
+    # PostgreSQL connection via custom exporter would go here
+
+  # Redis metrics (if redis_exporter is added)
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']  # Will need redis_exporter
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Claude Code Application metrics (when implemented)
+  - job_name: 'claude-app'
+    static_configs:
+      - targets: ['devcontainer:3000']
+    scrape_interval: 15s
+    metrics_path: /metrics
+    # Custom application metrics endpoint
+
+  # Environment Controller metrics
+  - job_name: 'environment-controller'
+    static_configs:
+      - targets: ['devcontainer:3001']
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  # MCP Orchestrator metrics
+  - job_name: 'mcp-orchestrator'
+    static_configs:
+      - targets: ['devcontainer:3002']
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  # Configuration Manager metrics
+  - job_name: 'config-manager'
+    static_configs:
+      - targets: ['devcontainer:3003']
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  # Grafana metrics
+  - job_name: 'grafana'
+    static_configs:
+      - targets: ['grafana:3000']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # MinIO metrics
+  - job_name: 'minio'
+    static_configs:
+      - targets: ['minio:9000']
+    scrape_interval: 30s
+    metrics_path: /minio/v2/metrics/cluster
+
+  # Jaeger metrics (if enabled)
+  - job_name: 'jaeger'
+    static_configs:
+      - targets: ['jaeger:14269']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Docker daemon metrics (if enabled in Docker)
+  - job_name: 'docker'
+    static_configs:
+      - targets: ['host.docker.internal:9323']  # Docker daemon metrics
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+# Storage configuration
+storage:
+  tsdb:
+    path: /prometheus
+    retention.time: 15d
+    retention.size: 10GB
+
+# Web server configuration
+web:
+  console.libraries: /etc/prometheus/console_libraries
+  console.templates: /etc/prometheus/consoles
+  enable-lifecycle: true
+  enable-admin-api: true

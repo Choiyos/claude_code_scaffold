@@ -1,0 +1,276 @@
+{
+  "name": "claude-environment-extension",
+  "displayName": "Claude Environment Manager",
+  "description": "VS Code extension for Claude Code + SuperClaude + MCP development environment management",
+  "version": "1.0.0",
+  "publisher": "claude-env",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/claude-environment/vscode-extension"
+  },
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other",
+    "Snippets",
+    "Debuggers",
+    "Extension Packs"
+  ],
+  "keywords": [
+    "claude",
+    "ai",
+    "development",
+    "environment",
+    "mcp",
+    "superclaude"
+  ],
+  "activationEvents": [
+    "onCommand:claude-env.init",
+    "onLanguage:javascript",
+    "onLanguage:typescript",
+    "onLanguage:python",
+    "workspaceContains:**/.claude-env/**",
+    "workspaceContains:**/.claude/**"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "claude-env.init",
+        "title": "Initialize Claude Environment",
+        "category": "Claude Env"
+      },
+      {
+        "command": "claude-env.sync",
+        "title": "Sync Environment",
+        "category": "Claude Env"
+      },
+      {
+        "command": "claude-env.status",
+        "title": "Check Environment Status",
+        "category": "Claude Env"
+      },
+      {
+        "command": "claude-env.openDashboard",
+        "title": "Open Dashboard",
+        "category": "Claude Env"
+      },
+      {
+        "command": "claude-env.showQuickPick",
+        "title": "Claude Environment Quick Actions",
+        "category": "Claude Env"
+      },
+      {
+        "command": "claude-env.toggleMcpServer",
+        "title": "Toggle MCP Server",
+        "category": "Claude Env"
+      },
+      {
+        "command": "claude-env.viewLogs",
+        "title": "View Environment Logs",
+        "category": "Claude Env"
+      },
+      {
+        "command": "claude-env.createConfig",
+        "title": "Create Configuration File",
+        "category": "Claude Env"
+      },
+      {
+        "command": "claude-env.validateConfig",
+        "title": "Validate Configuration",
+        "category": "Claude Env"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "claude-env.showQuickPick",
+        "key": "ctrl+shift+c",
+        "mac": "cmd+shift+c",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "claude-env.sync",
+        "key": "ctrl+alt+s",
+        "mac": "cmd+alt+s"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "claude-env.createConfig",
+          "when": "explorerResourceIsFolder",
+          "group": "claude-env@1"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "claude-env.validateConfig",
+          "when": "resourceFilename =~ /\\.(claude|mcp)\\.json$/ || resourceFilename =~ /claude-env\\.(yml|yaml)$/",
+          "group": "claude-env@1"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "claude-env.init",
+          "when": "workspaceRootCount > 0"
+        },
+        {
+          "command": "claude-env.sync",
+          "when": "claude-env.isInitialized"
+        },
+        {
+          "command": "claude-env.status",
+          "when": "claude-env.isInitialized"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "claude-env",
+          "title": "Claude Environment",
+          "icon": "$(rocket)"
+        }
+      ]
+    },
+    "views": {
+      "claude-env": [
+        {
+          "id": "claude-env.environments",
+          "name": "Environments",
+          "when": "claude-env.isInitialized"
+        },
+        {
+          "id": "claude-env.mcpServers",
+          "name": "MCP Servers",
+          "when": "claude-env.isInitialized"
+        },
+        {
+          "id": "claude-env.activity",
+          "name": "Recent Activity",
+          "when": "claude-env.isInitialized"
+        },
+        {
+          "id": "claude-env.help",
+          "name": "Help & Resources"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "claude-env.environments",
+        "contents": "No Claude Environment found in this workspace.\\n[Initialize Environment](command:claude-env.init)\\n[Open Documentation](https://docs.claude-env.dev)"
+      }
+    ],
+    "configuration": {
+      "title": "Claude Environment",
+      "properties": {
+        "claude-env.autoSync": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically sync environment configuration changes"
+        },
+        "claude-env.syncInterval": {
+          "type": "number",
+          "default": 300,
+          "description": "Auto-sync interval in seconds"
+        },
+        "claude-env.showStatusBar": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show Claude Environment status in status bar"
+        },
+        "claude-env.dashboardUrl": {
+          "type": "string",
+          "default": "http://localhost:3000",
+          "description": "URL of the Claude Environment dashboard"
+        },
+        "claude-env.notifications": {
+          "type": "object",
+          "default": {
+            "sync": true,
+            "errors": true,
+            "warnings": true
+          },
+          "description": "Notification preferences"
+        },
+        "claude-env.debugMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable debug mode with verbose logging"
+        }
+      }
+    },
+    "snippets": [
+      {
+        "language": "json",
+        "path": "./snippets/claude-config.json"
+      },
+      {
+        "language": "yaml",
+        "path": "./snippets/claude-config.yaml"
+      },
+      {
+        "language": "javascript",
+        "path": "./snippets/mcp-server.json"
+      },
+      {
+        "language": "typescript",
+        "path": "./snippets/mcp-server.json"
+      }
+    ],
+    "jsonValidation": [
+      {
+        "fileMatch": "*.claude.json",
+        "url": "./schemas/claude-config.schema.json"
+      },
+      {
+        "fileMatch": "mcp.json",
+        "url": "./schemas/mcp-config.schema.json"
+      }
+    ],
+    "languages": [
+      {
+        "id": "claude-config",
+        "aliases": ["Claude Config", "claude-config"],
+        "extensions": [".claude.json", ".claude.yml", ".claude.yaml"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "claude-config",
+        "scopeName": "source.claude-config",
+        "path": "./syntaxes/claude-config.tmGrammar.json"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.80.0",
+    "@types/node": "^18.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "typescript": "^5.0.0",
+    "@vscode/test-electron": "^2.3.0",
+    "@vscode/vsce": "^2.19.0"
+  },
+  "dependencies": {
+    "axios": "^1.5.0",
+    "ws": "^8.14.0",
+    "yaml": "^2.3.0",
+    "chokidar": "^3.5.0",
+    "glob": "^10.3.0"
+  }
+}

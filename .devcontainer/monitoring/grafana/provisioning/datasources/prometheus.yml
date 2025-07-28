@@ -1,0 +1,49 @@
+# Grafana datasource configuration for Claude Code + SuperClaude + MCP Development Environment
+# Automatically provisions Prometheus as the primary data source
+
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+    basicAuth: false
+    withCredentials: false
+    jsonData:
+      graphiteVersion: "1.1"
+      tlsAuth: false
+      tlsAuthWithCACert: false
+      prometheusType: "Prometheus"
+      prometheusVersion: "2.40.0"
+      cacheLevel: "High"
+      httpMethod: "POST"
+      customQueryParameters: ""
+      timeInterval: "30s"
+    secureJsonData: {}
+    version: 1
+    readOnly: false
+
+  # Additional datasource for direct container metrics (optional)
+  - name: cAdvisor
+    type: prometheus
+    access: proxy
+    url: http://cadvisor:8080
+    isDefault: false
+    editable: true
+    basicAuth: false
+    withCredentials: false
+    jsonData:
+      prometheusType: "Prometheus"
+      prometheusVersion: "2.40.0"
+      httpMethod: "GET"
+      timeInterval: "15s"
+    secureJsonData: {}
+    version: 1
+    readOnly: false
+
+deleteDatasources:
+  - name: TestData DB
+    orgId: 1
