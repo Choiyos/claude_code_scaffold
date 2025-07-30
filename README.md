@@ -29,8 +29,11 @@ cd claude_code_scaffold
 
 ### 4. 즉시 사용 가능
 ```bash
-# Claude Code CLI 사용
-claude-code --help
+# Claude CLI 사용
+claude --help
+
+# MCP 서버 확인
+claude mcp list
 
 # 서비스 상태 확인
 docker-compose ps
@@ -42,13 +45,13 @@ docker-compose ps
 ## 📦 포함된 구성요소
 
 ### Claude Code 환경
-- **Claude Code CLI**: 1.0.63 버전
-- **MCP 서버들**:
+- **Claude CLI**: 호스트 시스템에서 제공 (1.0.63+ 권장)
+- **MCP 서버들** (자동 설치):
   - `@modelcontextprotocol/server-sequential-thinking`
   - `@upstash/context7-mcp`  
   - `@21st-dev/magic`
   - `@playwright/mcp`
-- **설정 파일**: Windows 환경과 동일한 설정 자동 적용
+- **설정 관리**: Claude CLI의 `claude mcp install` 명령어로 자동 설정
 
 ### 개발 런타임
 - **Node.js**: Volta로 프로젝트별 자동 관리
@@ -71,26 +74,22 @@ docker-compose ps
 - **권한**: sudo 무패스워드 사용 가능
 
 ### 자동 설정 내용
-1. Claude Code CLI 설치 및 설정
-2. MCP 서버들 설치
-3. 팀 공통 설정 파일 적용
-4. Git 기본 설정 및 별칭
-5. 개발 도구 및 유틸리티 설치
-6. 인프라 서비스 자동 시작
+1. Claude CLI 환경 확인 및 설정
+2. MCP 서버들 자동 설치 (`claude mcp install` 사용)
+3. Git 기본 설정 및 별칭
+4. 개발 도구 및 유틸리티 설치
+5. 인프라 서비스 자동 시작
+6. Volta를 통한 Node.js 버전 관리
 
 ## 📁 디렉토리 구조
 
 ```
 claude_code_scaffold/
 ├── .devcontainer/              # DevContainer 설정
-│   ├── devcontainer.json      # VS Code 컨테이너 설정 (Volume Mount 포함)
+│   ├── devcontainer.json      # VS Code 컨테이너 설정
 │   ├── Dockerfile             # 컨테이너 이미지 정의 (Volta 포함)
 │   └── setup-claude-environment.sh  # 환경 설정 스크립트
-├── config/                    # 팀 설정 및 인프라
-│   ├── claude/               # Claude Code 설정 (Volume Mount)
-│   │   ├── config.json       # Claude 기본 설정
-│   │   ├── mcp.json          # MCP 서버 설정
-│   │   └── .env.example      # API 키 예제
+├── config/                    # 인프라 설정
 │   └── prometheus.yml        # Prometheus 설정
 ├── workspace/                 # 개발 프로젝트 작업 공간 (Git ignore)
 │   ├── README.md             # 사용법 가이드
@@ -109,17 +108,21 @@ claude_code_scaffold/
 Ctrl+Shift+P → "Dev Containers: Rebuild Container"
 ```
 
-### Claude Code CLI 설치 확인
+### Claude CLI 설치 확인
 ```bash
 # 컨테이너 내에서 실행
-claude-code --version
-which claude-code
+claude --version
+which claude
 ```
 
 ### MCP 서버 상태 확인
 ```bash
-# MCP 서버 설정 파일 확인
-cat ~/.claude/mcp-servers.json
+# MCP 서버 목록 확인
+claude mcp list
+
+# Claude 설정 파일 확인
+ls -la ~/.claude/
+cat ~/.claude/.claude.json
 
 # Node.js 글로벌 패키지 확인
 npm list -g --depth=0
@@ -167,41 +170,49 @@ docker-compose restart
 3. **Claude Code 개발**: 
    ```bash
    npm install
-   claude-code .  # 또는 현재 디렉토리에서 Claude Code 사용
+   claude .  # 또는 현재 디렉토리에서 Claude CLI 사용
    ```
 
-4. **설정 동기화**: 필요시 `~/.claude/` 파일 수정으로 팀 설정 업데이트
+4. **MCP 서버 관리**: `claude mcp install/uninstall` 명령어로 MCP 서버 추가/제거
 
 5. **모니터링**: Grafana 대시보드에서 메트릭 확인
 
-## 🔄 팀 설정 관리
+## 🔄 MCP 서버 관리
 
-### Git 기반 자동 동기화
-팀원들의 Claude Code 및 MCP 설정을 Git으로 체계적으로 관리합니다.
+### Claude CLI 기반 MCP 관리
+Claude CLI의 내장 MCP 관리 시스템을 사용하여 MCP 서버를 관리합니다.
 
 ```bash
-# 팀 설정을 내 환경으로 동기화
-bash scripts/sync-team-config.sh pull
+# MCP 서버 설치
+claude mcp install @modelcontextprotocol/server-sequential-thinking
+claude mcp install @upstash/context7-mcp
+claude mcp install @21st-dev/magic
+claude mcp install @playwright/mcp
 
-# 내 설정을 팀에 제안 (PR 생성)
-bash scripts/sync-team-config.sh push
+# 설치된 MCP 서버 목록 확인
+claude mcp list
 
-# 설정 상태 및 변경 이력 확인
-bash scripts/sync-team-config.sh status
+# MCP 서버 제거
+claude mcp uninstall <server-name>
+
+# Claude 설정 확인
+ls -la ~/.claude/
+cat ~/.claude/.claude.json
 ```
 
-### 자동 알림 시스템
-- **설정 변경 감지**: Git Hooks로 팀 설정 변경 시 자동 알림
-- **검증 시스템**: 커밋 전 JSON 문법 및 필수 필드 자동 검증
-- **충돌 해결**: 설정 충돌 시 자동 해결 도구 제공
+### 자동 설정
+- **초기 설치**: DevContainer 빌드 시 기본 MCP 서버들 자동 설치
+- **설정 관리**: Claude CLI가 `~/.claude/.claude.json`에서 자동 관리
+- **팀 공유**: 필요시 MCP 서버 목록을 팀원들과 공유 가능
 
-### 설정 파일 관리 (Volume Mount 방식)
-- `config/claude/config.json`: Claude Code 기본 설정
-- `config/claude/mcp.json`: MCP 서버 목록 및 설정
-- **실시간 동기화**: 컨테이너에서 `~/.claude/` 수정 시 자동으로 Git 변경점으로 잡힘
-- **양방향 연결**: Git에서 설정 변경 시 컨테이너에서 즉시 반영
+### 커스텀 MCP 서버 추가
+```bash
+# 새로운 MCP 서버 설치
+claude mcp install <npm-package-name>
 
-📖 **자세한 사용법**: [팀 설정 관리 가이드](TEAM-CONFIG-GUIDE.md)
+# 로컬 MCP 서버 개발 시
+# ~/.claude/.claude.json 파일을 직접 편집하여 로컬 경로 추가
+```
 
 ## ⚡ 성능 최적화
 

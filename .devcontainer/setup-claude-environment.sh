@@ -36,27 +36,10 @@ install_claude_code() {
         return 1
     fi
     
-    # Claude Code CLI 설치 시도 (정확한 패키지명 시도)
-    local claude_packages=(
-        "@anthropic-ai/claude-code@1.0.63"
-        "@anthropic/claude-code"
-        "claude-code"
-    )
-    
-    local installed=false
-    for package in "${claude_packages[@]}"; do
-        log_info "시도 중: $package"
-        if npm install -g "$package" 2>/dev/null; then
-            log_success "Claude Code CLI 설치 완료: $package"
-            installed=true
-            break
-        fi
-    done
-    
-    if [ "$installed" = false ]; then
-        log_warning "Claude Code CLI 공식 패키지를 찾을 수 없습니다."
-        log_info "수동으로 Claude Code를 설치해야 할 수 있습니다."
-    fi
+    # Claude CLI는 이미 사용자 시스템에 설치되어 있어야 함
+    # DevContainer에서는 호스트 시스템의 Claude CLI를 사용
+    log_info "Claude CLI는 호스트 시스템에서 제공되어야 합니다."
+    log_info "참고: Claude CLI는 claude.ai에서 다운로드하여 설치하세요."
     
     # PATH 환경변수에 npm global bin 추가
     local npm_global_bin=$(npm config get prefix)/bin
@@ -67,23 +50,27 @@ install_claude_code() {
         log_info "NPM global bin을 PATH에 추가했습니다: $npm_global_bin"
     fi
     
-    # Claude Code 설치 확인
-    if command -v claude-code &> /dev/null; then
-        log_success "Claude Code CLI 설치 확인됨"
-        claude-code --version 2>/dev/null || echo "Claude Code CLI 실행 가능"
+    # Claude CLI 설치 확인
+    if command -v claude &> /dev/null; then
+        log_success "Claude CLI 설치 확인됨: $(claude --version)"
     else
-        log_warning "Claude Code CLI가 PATH에서 찾을 수 없습니다."
-        log_info "가능한 위치들:"
-        find /usr/local -name "*claude*" 2>/dev/null || true
-        find ~/.npm-global -name "*claude*" 2>/dev/null || true
+        log_warning "Claude CLI가 PATH에서 찾을 수 없습니다."
+        log_info "Claude CLI를 호스트 시스템에 설치한 후 컨테이너를 재시작하세요."
+        log_info "다운로드: https://claude.ai/download"
     fi
 }
 
-# MCP 서버 설치
+# MCP 서버 설치 (Claude CLI installer 사용)
 install_mcp_servers() {
-    log_info "MCP 서버들 설치 중..."
+    log_info "MCP 서버들 설치 중 (Claude CLI installer 사용)..."
     
-    # MCP 서버들 설치 (전역 설치)
+    # Claude CLI가 설치되어 있는지 확인
+    if ! command -v claude &> /dev/null; then
+        log_error "Claude CLI를 찾을 수 없습니다. 먼저 Claude CLI를 설치해야 합니다."
+        return 1
+    fi
+    
+    # MCP 서버들 설치
     local servers=(
         "@modelcontextprotocol/server-sequential-thinking"  
         "@upstash/context7-mcp"
@@ -92,60 +79,57 @@ install_mcp_servers() {
     )
     
     for server in "${servers[@]}"; do
-        log_info "설치 중: $server"
-        if npm install -g "$server"; then
-            log_success "$server 설치 완료"
+        log_info "Claude MCP 설치 중: $server"
+        if claude mcp install "$server"; then
+            log_success "$server MCP 설치 완료"
+        else
+            log_warning "$server MCP 설치 실패 - 수동 설치가 필요할 수 있습니다."
             
-            # 설치된 패키지 경로 확인
-            local package_path=$(npm list -g "$server" --depth=0 2>/dev/null | grep "$server" || true)
-            if [ -n "$package_path" ]; then
-                log_info "설치 위치: $package_path"
-            fi
-        else
-            log_warning "$server 설치 실패 - 수동 설치가 필요할 수 있습니다."
+            # 실패 시 npm으로 패키지라도 설치
+            log_info "npm으로 패키지 설치 시도: $server"
+            npm install -g "$server" 2>/dev/null || true
         fi
     done
     
-    # 설치 검증
-    log_info "설치된 MCP 서버 검증 중..."
-    for server in "${servers[@]}"; do
-        if npx "$server" --help &>/dev/null || npx "$server" --version &>/dev/null; then
-            log_success "$server: npx로 실행 가능"
-        else
-            log_warning "$server: npx로 실행할 수 없음. 수동 확인 필요"
-        fi
-    done
-    
-    # npm 글로벌 패키지 목록 표시
-    log_info "설치된 모든 글로벌 패키지:"
-    npm list -g --depth=0 | grep -E "(sequential|context7|magic|playwright)" || echo "  MCP 관련 패키지 없음"
+    # MCP 서버 설치 확인
+    log_info "설치된 MCP 서버 확인 중..."
+    if claude mcp list &>/dev/null; then
+        log_success "Claude MCP 서버 목록:"
+        claude mcp list
+    else
+        log_warning "Claude MCP 서버 목록을 가져올 수 없습니다."
+    fi
 }
 
-# Claude Code 환경 설정 (Volume Mount 방식)
+# Claude Code 환경 설정 (Claude CLI 자체 관리)
 setup_claude_config() {
-    log_info "Claude Code 환경 설정 중 (Volume Mount 방식)..."
+    log_info "Claude Code 환경 설정 중 (Claude CLI 자체 관리)..."
     
-    # Volume Mount로 이미 ~/.claude가 config/claude와 연결되어 있음
-    if [ -d ~/.claude ]; then
-        log_success "Claude 설정 디렉토리가 Volume Mount로 연결되어 있습니다: ~/.claude"
+    # Claude CLI가 자체적으로 ~/.claude 디렉토리 생성 및 관리
+    # MCP 서버들이 설치되면 자동으로 .claude.json 파일이 생성됨
+    
+    # 기본 Claude 설정 확인
+    if command -v claude &> /dev/null; then
+        log_success "Claude CLI 사용 가능: $(claude --version)"
         
-        # 연결된 파일들 확인
-        if [ -f ~/.claude/config.json ]; then
-            log_success "Claude 기본 설정 파일 확인: ~/.claude/config.json"
+        # Claude 설정 디렉토리 확인
+        if [ -d ~/.claude ]; then
+            log_success "Claude 설정 디렉토리 확인: ~/.claude"
+            
+            # 설정 파일들 확인
+            if [ -f ~/.claude/.claude.json ]; then
+                log_success "Claude 설정 파일 확인: ~/.claude/.claude.json"
+            else
+                log_info "Claude 설정 파일이 아직 생성되지 않았습니다. MCP 서버 설치 후 자동 생성됩니다."
+            fi
+        else
+            log_info "Claude 설정 디렉토리가 아직 생성되지 않았습니다. 첫 실행 시 자동 생성됩니다."
         fi
         
-        if [ -f ~/.claude/mcp.json ]; then
-            log_success "MCP 서버 설정 파일 확인: ~/.claude/mcp.json"
-        fi
-        
-        # 설정 파일 권한 조정
-        chmod 600 ~/.claude/config.json 2>/dev/null || true
-        chmod 600 ~/.claude/mcp.json 2>/dev/null || true
-        
-        log_info "Volume Mount 설정으로 팀 설정이 실시간 동기화됩니다."
-        log_info "컨테이너에서 ~/.claude/ 파일 수정 시 자동으로 Git 변경점으로 잡힙니다."
+        log_info "Claude CLI가 설정을 자동으로 관리합니다."
+        log_info "MCP 서버 추가/제거는 'claude mcp install/uninstall' 명령어를 사용하세요."
     else
-        log_error "Volume Mount 설정에 문제가 있습니다. ~/.claude 디렉토리를 찾을 수 없습니다."
+        log_error "Claude CLI를 찾을 수 없습니다."
         return 1
     fi
 }
@@ -288,11 +272,11 @@ alias dclogs='docker-compose logs -f'
 alias python='python3'
 alias pip='pip3'
 
-# Claude Code 관련 설정
-if command -v claude-code &> /dev/null; then
-    # Claude Code 자동완성 (사용 가능한 경우)
-    # eval "$(claude-code completion zsh)"
-    echo "🤖 Claude Code CLI 사용 가능"
+# Claude CLI 관련 설정
+if command -v claude &> /dev/null; then
+    # Claude CLI 자동완성 (사용 가능한 경우)
+    # eval "$(claude completion zsh)"
+    echo "🤖 Claude CLI 사용 가능"
 fi
 
 EOF
@@ -318,24 +302,32 @@ verify_environment() {
         log_error "Python이 설치되지 않았습니다."
     fi
     
-    # Claude Code CLI 확인
-    if command -v claude-code &> /dev/null; then
-        log_success "Claude Code CLI 설치 확인"
+    # Claude CLI 확인
+    if command -v claude &> /dev/null; then
+        log_success "Claude CLI 설치 확인: $(claude --version)"
+        
+        # MCP 서버 목록 확인
+        if claude mcp list &>/dev/null; then
+            log_success "MCP 서버 목록:"
+            claude mcp list
+        else
+            log_info "MCP 서버가 아직 설치되지 않았습니다."
+        fi
     else
-        log_warning "Claude Code CLI를 찾을 수 없습니다."
+        log_warning "Claude CLI를 찾을 수 없습니다."
     fi
     
-    # 설정 파일 확인
-    if [ -f ~/.claude/config.json ]; then
-        log_success "Claude 설정 파일 확인"
+    # Claude 설정 디렉토리 확인
+    if [ -d ~/.claude ]; then
+        log_success "Claude 설정 디렉토리 확인: ~/.claude"
+        
+        if [ -f ~/.claude/.claude.json ]; then
+            log_success "Claude 설정 파일 확인: ~/.claude/.claude.json"
+        else
+            log_info "Claude 설정 파일이 아직 생성되지 않았습니다."
+        fi
     else
-        log_warning "Claude 설정 파일이 없습니다."
-    fi
-    
-    if [ -f ~/.claude/mcp-servers.json ]; then
-        log_success "MCP 서버 설정 파일 확인"
-    else
-        log_warning "MCP 서버 설정 파일이 없습니다."
+        log_info "Claude 설정 디렉토리가 아직 생성되지 않았습니다."
     fi
 }
 
@@ -359,9 +351,10 @@ main() {
     log_info ""
     log_info "다음 단계:"
     log_info "  1. 터미널 재시작: exec zsh"
-    log_info "  2. Claude Code 사용: claude-code --help"
-    log_info "  3. 서비스 상태 확인: docker-compose ps"
-    log_info "  4. Grafana 대시보드: http://localhost:3010"
+    log_info "  2. Claude CLI 사용: claude --help"
+    log_info "  3. MCP 서버 확인: claude mcp list"
+    log_info "  4. 서비스 상태 확인: docker-compose ps"
+    log_info "  5. Grafana 대시보드: http://localhost:3010"
     log_info ""
     log_info "문제가 발생하면 다음 명령어로 로그를 확인하세요:"
     log_info "  docker-compose logs -f"

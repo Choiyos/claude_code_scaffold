@@ -2,7 +2,6 @@
 workspace/
 
 # API 키 및 환경변수 파일
-config/claude/.env
 *.env
 !.env.example
 

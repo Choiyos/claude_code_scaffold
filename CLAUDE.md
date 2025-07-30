@@ -19,9 +19,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # 2. Open in VS Code
 # 3. Click "Reopen in Container" or Ctrl+Shift+P → "Dev Containers: Reopen in Container"
 
-# Inside container - check Claude Code CLI
-claude-code --version
-claude-code --help
+# Inside container - check Claude CLI
+claude --version
+claude --help
 
 # Check services
 docker-compose ps
@@ -32,11 +32,14 @@ docker-compose logs -f
 
 ### Environment Management
 ```bash
-# Check Claude Code configuration
-cat ~/.claude/config.json
-cat ~/.claude/mcp-servers.json
+# Check Claude CLI configuration
+ls -la ~/.claude/
+cat ~/.claude/.claude.json
 
-# Verify MCP servers installation
+# Check MCP servers
+claude mcp list
+
+# Verify MCP servers installation (npm packages)
 npm list -g --depth=0
 
 # Check Node.js and Python versions
@@ -67,8 +70,8 @@ docker-compose logs -f grafana
 ```bash
 # Typical development workflow
 cd /workspace
-claude-code --help
-# Start development with Claude Code CLI
+claude --help
+# Start development with Claude CLI
 
 # Access monitoring
 # Grafana: http://localhost:3010 (admin/admin)
@@ -83,15 +86,15 @@ The environment is built as a portable DevContainer that provides:
 1. **Base OS**: Ubuntu 22.04 LTS for maximum compatibility
 2. **Runtime Environments**: Node.js 18.20.8, Python 3.11
 3. **Shell Environment**: Zsh + Oh My Zsh with productivity enhancements
-4. **Claude Code CLI**: Version 1.0.63 with team configuration
-5. **MCP Servers**: Pre-installed and configured (Sequential, Context7, Magic, Playwright)
+4. **Claude CLI**: Version 1.0.63+ from host system
+5. **MCP Servers**: Auto-installed via `claude mcp install` (Sequential, Context7, Magic, Playwright)
 
 ### Configuration System
-Simplified configuration management:
-- **Team Configuration**: `team-config/` directory with shared settings
-- **Claude Settings**: Auto-applied from `claude-config.json`
-- **MCP Configuration**: Team MCP servers from `mcp-servers.json`
+Claude CLI-based configuration management:
+- **MCP Management**: `claude mcp install/uninstall` commands for MCP server management
+- **Configuration Storage**: `~/.claude/.claude.json` managed by Claude CLI
 - **Environment Variables**: Automatically set in container
+- **Volta Integration**: Node.js version management per project
 
 ### Infrastructure Services
 Minimal infrastructure for development support:
