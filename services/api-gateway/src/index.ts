@@ -7,10 +7,16 @@ import rateLimit from 'express-rate-limit';
 import morgan from 'morgan';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { createClient } from 'redis';
-import promClient from 'prom-client';
-import dotenv from 'dotenv';
+import * as promClient from 'prom-client';
+import * as dotenv from 'dotenv';
 
-import { createLogger } from '@shared/utils/logger';
+// Simple logger replacement
+const createLogger = (name: string) => ({
+  info: (...args: any[]) => console.log(`[${name}]`, ...args),
+  error: (...args: any[]) => console.error(`[${name}]`, ...args),
+  warn: (...args: any[]) => console.warn(`[${name}]`, ...args),
+  debug: (...args: any[]) => console.debug(`[${name}]`, ...args)
+});
 import { errorHandler } from './middleware/errorHandler';
 import { requestIdMiddleware } from './middleware/requestId';
 import { metricsMiddleware } from './middleware/metrics';
@@ -56,15 +62,15 @@ app.set('trust proxy', 1);
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
-      defaultSrc: [\"'self'\"],
-      styleSrc: [\"'self'\", \"'unsafe-inline'\"],
-      scriptSrc: [\"'self'\"],
-      imgSrc: [\"'self'\", 'data:', 'https:'],
-      connectSrc: [\"'self'\"],
-      fontSrc: [\"'self'\"],
-      objectSrc: [\"'none'\"],
-      mediaSrc: [\"'self'\"],
-      frameSrc: [\"'none'\"]
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", 'data:', 'https:'],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"]
     }
   },
   crossOriginEmbedderPolicy: false

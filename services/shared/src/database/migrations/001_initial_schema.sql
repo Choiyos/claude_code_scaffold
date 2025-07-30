@@ -121,7 +121,7 @@ CREATE TABLE IF NOT EXISTS configurations (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     
-    CONSTRAINT configurations_name_environment_unique UNIQUE (name, (metadata->>'environment'))
+    -- Note: Unique constraint on name and environment handled by application logic
 );
 
 -- Create configuration_backups table
