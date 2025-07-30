@@ -1,0 +1,206 @@
+version: '3.8'
+
+services:
+  # Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: claude-env-postgres
+    environment:
+      POSTGRES_DB: claude_environment
+      POSTGRES_USER: claude_env
+      POSTGRES_PASSWORD: dev_password_change_in_production
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./services/shared/src/database/migrations:/docker-entrypoint-initdb.d
+    networks:
+      - claude-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U claude_env -d claude_environment"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis for caching and rate limiting
+  redis:
+    image: redis:7-alpine
+    container_name: claude-env-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - claude-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    container_name: claude-env-api-gateway
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      REDIS_URL: redis://redis:6379
+      ENVIRONMENT_CONTROLLER_URL: http://environment-controller:3001
+      CONFIGURATION_MANAGER_URL: http://configuration-manager:3003
+      JWT_SECRET: dev_jwt_secret_change_in_production
+      ALLOWED_ORIGINS: http://localhost:3000,http://localhost:8080
+      SERVICE_VERSION: 1.0.0
+    ports:
+      - "3000:3000"
+    depends_on:
+      - redis
+    networks:
+      - claude-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Environment Controller
+  environment-controller:
+    build:
+      context: ./services/environment-controller
+      dockerfile: Dockerfile
+    container_name: claude-env-environment-controller
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      DATABASE_URL: postgres://claude_env:dev_password_change_in_production@postgres:5432/claude_environment
+      WORKSPACE_DIR: /workspace/environments
+      TEMPLATE_DIR: /workspace/templates
+      ALLOWED_ORIGINS: http://localhost:3000
+      SERVICE_VERSION: 1.0.0
+    ports:
+      - "3001:3001"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - workspace_data:/workspace
+    depends_on:
+      - postgres
+    networks:
+      - claude-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Configuration Manager
+  configuration-manager:
+    build:
+      context: ./services/configuration-manager
+      dockerfile: Dockerfile
+    container_name: claude-env-configuration-manager
+    environment:
+      NODE_ENV: development
+      PORT: 3003
+      DATABASE_URL: postgres://claude_env:dev_password_change_in_production@postgres:5432/claude_environment
+      CONFIG_DIR: /workspace/config
+      SCHEMA_DIR: /workspace/schemas
+      BACKUP_DIR: /workspace/backups
+      MAX_BACKUPS: 10
+      ALLOWED_ORIGINS: http://localhost:3000
+      SERVICE_VERSION: 1.0.0
+    ports:
+      - "3003:3003"
+    volumes:
+      - config_data:/workspace
+    depends_on:
+      - postgres
+    networks:
+      - claude-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Dashboard (Frontend)
+  dashboard:
+    build:
+      context: ./src/dashboard
+      dockerfile: Dockerfile
+    container_name: claude-env-dashboard
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:3000
+      NEXT_PUBLIC_WS_URL: ws://localhost:3001
+    ports:
+      - "8080:3000"
+    depends_on:
+      - api-gateway
+    networks:
+      - claude-network
+    restart: unless-stopped
+
+  # Monitoring - Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: claude-env-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - claude-network
+    restart: unless-stopped
+
+  # Monitoring - Grafana
+  grafana:
+    image: grafana/grafana:latest
+    container_name: claude-env-grafana
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: false
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./config/grafana/datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - prometheus
+    networks:
+      - claude-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  workspace_data:
+    driver: local
+  config_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  claude-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

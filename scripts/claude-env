@@ -4,6 +4,8 @@ Claude Environment Management CLI Tool
 Comprehensive configuration synchronization and management for Claude Code + SuperClaude + MCP
 
 Modern CLI with interactive prompts, progress indicators, and comprehensive developer experience
+Version: 2.0.0
+Author: Claude Code Team
 """
 
 import argparse

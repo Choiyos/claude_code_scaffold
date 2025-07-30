@@ -1,0 +1,403 @@
+#!/usr/bin/env python3
+"""
+Claude Environment Utilities CLI
+Unified interface for all Claude environment management utilities
+"""
+
+import sys
+import subprocess
+from pathlib import Path
+from typing import List, Optional
+
+# Rich imports for beautiful output
+try:
+    from rich.console import Console
+    from rich.table import Table
+    from rich.panel import Panel
+    from rich import print as rprint
+    RICH_AVAILABLE = True
+except ImportError:
+    RICH_AVAILABLE = False
+    def rprint(*args, **kwargs):
+        print(*args, **kwargs)
+
+console = Console() if RICH_AVAILABLE else None
+
+class UtilitiesManager:
+    """Manager for all Claude environment utilities"""
+    
+    def __init__(self):
+        self.script_dir = Path(__file__).parent
+        self.utils_dir = self.script_dir / "utils"
+        self.monitoring_dir = self.script_dir / "monitoring"
+        
+        # Available utilities
+        self.utilities = {
+            # Core utilities
+            "health-check": {
+                "path": self.monitoring_dir / "health-check.py",
+                "description": "Comprehensive system health validation",
+                "category": "monitoring",
+                "examples": [
+                    "claude-env-utils health-check",
+                    "claude-env-utils health-check --json",
+                    "claude-env-utils health-check --continuous"
+                ]
+            },
+            "validate": {
+                "path": self.utils_dir / "environment-validator.py",
+                "description": "Validate configuration files and environment setup",
+                "category": "validation",
+                "examples": [
+                    "claude-env-utils validate",
+                    "claude-env-utils validate --json",
+                    "claude-env-utils validate --component main_config"
+                ]
+            },
+            "backup": {
+                "path": self.utils_dir / "backup-restore.py",
+                "description": "Backup and restore functionality",
+                "category": "data",
+                "examples": [
+                    "claude-env-utils backup create --environment development",
+                    "claude-env-utils backup list",
+                    "claude-env-utils backup restore backup_id"
+                ]
+            },
+            "mcp": {
+                "path": self.utils_dir / "mcp-manager.py",
+                "description": "MCP server lifecycle management",
+                "category": "servers",
+                "examples": [
+                    "claude-env-utils mcp status",
+                    "claude-env-utils mcp start all",
+                    "claude-env-utils mcp restart context7"
+                ]
+            },
+            "init": {
+                "path": self.utils_dir / "project-init.py",
+                "description": "Initialize new projects with Claude environment",
+                "category": "project",
+                "examples": [
+                    "claude-env-utils init create my-project --template nodejs",
+                    "claude-env-utils init list",
+                    "claude-env-utils init create api-server --template python"
+                ]
+            }
+        }
+    
+    def list_utilities(self):
+        """List all available utilities"""
+        if RICH_AVAILABLE and console:
+            # Group by category
+            categories = {}
+            for util_name, util_info in self.utilities.items():
+                category = util_info["category"]
+                if category not in categories:
+                    categories[category] = []
+                categories[category].append((util_name, util_info))
+            
+            for category, utilities in categories.items():
+                table = Table(title=f"📋 {category.title()} Utilities", show_header=True, header_style="bold magenta")
+                table.add_column("Utility", style="cyan", width=15)
+                table.add_column("Description", style="white", width=50)
+                table.add_column("Example", style="dim", width=40)
+                
+                for util_name, util_info in utilities:
+                    table.add_row(
+                        util_name,
+                        util_info["description"],
+                        util_info["examples"][0] if util_info["examples"] else ""
+                    )
+                
+                console.print(table)
+                console.print()
+        else:
+            print("\nAvailable Claude Environment Utilities:")
+            print("=" * 60)
+            
+            # Group by category
+            categories = {}
+            for util_name, util_info in self.utilities.items():
+                category = util_info["category"]
+                if category not in categories:
+                    categories[category] = []
+                categories[category].append((util_name, util_info))
+            
+            for category, utilities in categories.items():
+                print(f"\n{category.upper()} UTILITIES:")
+                print("-" * 30)
+                for util_name, util_info in utilities:
+                    print(f"  {util_name:<15} {util_info['description']}")
+                    if util_info["examples"]:
+                        print(f"  {'':15} Example: {util_info['examples'][0]}")
+    
+    def show_utility_help(self, utility_name: str):
+        """Show detailed help for a specific utility"""
+        if utility_name not in self.utilities:
+            if RICH_AVAILABLE and console:
+                console.print(f"[red]❌ Unknown utility: {utility_name}[/red]")
+            else:
+                print(f"❌ Unknown utility: {utility_name}")
+            return False
+        
+        util_info = self.utilities[utility_name]
+        
+        if RICH_AVAILABLE and console:
+            help_content = f"📖 {util_info['description']}\n\n"
+            help_content += "🚀 Examples:\n"
+            for example in util_info["examples"]:
+                help_content += f"   {example}\n"
+            
+            panel = Panel(
+                help_content,
+                title=f"🔧 {utility_name.title()} Utility",
+                border_style="blue"
+            )
+            console.print(panel)
+        else:
+            print(f"\n{utility_name.upper()} UTILITY")
+            print("=" * (len(utility_name) + 8))
+            print(f"Description: {util_info['description']}")
+            print(f"Category: {util_info['category']}")
+            print("\nExamples:")
+            for example in util_info["examples"]:
+                print(f"  {example}")
+        
+        # Show actual utility help
+        try:
+            subprocess.run([sys.executable, str(util_info["path"]), "--help"])
+        except Exception as e:
+            print(f"Failed to show utility help: {e}")
+        
+        return True
+    
+    def run_utility(self, utility_name: str, args: List[str]) -> int:
+        """Run a specific utility with arguments"""
+        if utility_name not in self.utilities:
+            if RICH_AVAILABLE and console:
+                console.print(f"[red]❌ Unknown utility: {utility_name}[/red]")
+            else:
+                print(f"❌ Unknown utility: {utility_name}")
+            return 1
+        
+        util_info = self.utilities[utility_name]
+        util_path = util_info["path"]
+        
+        if not util_path.exists():
+            if RICH_AVAILABLE and console:
+                console.print(f"[red]❌ Utility not found: {util_path}[/red]")
+            else:
+                print(f"❌ Utility not found: {util_path}")
+            return 1
+        
+        try:
+            # Run the utility with arguments
+            cmd = [sys.executable, str(util_path)] + args
+            result = subprocess.run(cmd)
+            return result.returncode
+        
+        except KeyboardInterrupt:
+            if RICH_AVAILABLE and console:
+                console.print("\n[yellow]Operation cancelled[/yellow]")
+            else:
+                print("\nOperation cancelled")
+            return 130
+        except Exception as e:
+            if RICH_AVAILABLE and console:
+                console.print(f"[red]❌ Failed to run utility: {e}[/red]")
+            else:
+                print(f"❌ Failed to run utility: {e}")
+            return 1
+    
+    def run_quick_checks(self) -> int:
+        """Run quick health and validation checks"""
+        if RICH_AVAILABLE and console:
+            console.print("[blue]🔍 Running quick environment checks...[/blue]")
+        else:
+            print("🔍 Running quick environment checks...")
+        
+        # Run health check
+        health_result = self.run_utility("health-check", ["--json"])
+        
+        # Run validation
+        validation_result = self.run_utility("validate", ["--json"])
+        
+        # Determine overall status
+        if health_result == 0 and validation_result == 0:
+            if RICH_AVAILABLE and console:
+                console.print("[green]✅ All checks passed[/green]")
+            else:
+                print("✅ All checks passed")
+            return 0
+        else:
+            if RICH_AVAILABLE and console:
+                console.print("[yellow]⚠️  Some checks failed[/yellow]")
+            else:
+                print("⚠️  Some checks failed")
+            return 1
+    
+    def show_system_status(self) -> int:
+        """Show comprehensive system status"""
+        if RICH_AVAILABLE and console:
+            console.print("[blue]📊 Claude Environment System Status[/blue]\n")
+        else:
+            print("📊 Claude Environment System Status\n")
+        
+        # Health check
+        if RICH_AVAILABLE and console:
+            console.print("[cyan]🏥 Health Check:[/cyan]")
+        else:
+            print("🏥 Health Check:")
+        
+        health_result = self.run_utility("health-check", [])
+        
+        print()
+        
+        # Configuration validation
+        if RICH_AVAILABLE and console:
+            console.print("[cyan]🔍 Configuration Validation:[/cyan]")
+        else:
+            print("🔍 Configuration Validation:")
+        
+        validation_result = self.run_utility("validate", [])
+        
+        print()
+        
+        # MCP server status
+        if RICH_AVAILABLE and console:
+            console.print("[cyan]🔧 MCP Server Status:[/cyan]")
+        else:
+            print("🔧 MCP Server Status:")
+        
+        mcp_result = self.run_utility("mcp", ["status"])
+        
+        return max(health_result, validation_result, mcp_result)
+
+def show_main_help():
+    """Show main help information"""
+    if RICH_AVAILABLE and console:
+        help_content = """🚀 Claude Environment Utilities CLI
+
+Available commands:
+  list                    List all available utilities
+  quick-check            Run quick health and validation checks
+  status                 Show comprehensive system status
+  help <utility>         Show help for specific utility
+  <utility> [args...]    Run specific utility with arguments
+
+Available utilities:
+  health-check          System health validation
+  validate              Configuration validation
+  backup                Backup and restore operations
+  mcp                   MCP server management
+  init                  Project initialization
+
+Examples:
+  claude-env-utils list
+  claude-env-utils quick-check
+  claude-env-utils health-check --continuous
+  claude-env-utils backup create --environment development
+  claude-env-utils mcp status --watch
+  claude-env-utils init create my-project --template nodejs
+"""
+        
+        panel = Panel(
+            help_content,
+            title="🔧 Claude Environment Utilities",
+            border_style="blue"
+        )
+        console.print(panel)
+    else:
+        print("""
+Claude Environment Utilities CLI
+
+USAGE:
+  claude-env-utils <command> [arguments...]
+
+COMMANDS:
+  list                    List all available utilities
+  quick-check            Run quick health and validation checks
+  status                 Show comprehensive system status
+  help <utility>         Show help for specific utility
+  <utility> [args...]    Run specific utility with arguments
+
+UTILITIES:
+  health-check          System health validation
+  validate              Configuration validation
+  backup                Backup and restore operations
+  mcp                   MCP server management
+  init                  Project initialization
+
+EXAMPLES:
+  claude-env-utils list
+  claude-env-utils quick-check
+  claude-env-utils health-check --continuous
+  claude-env-utils backup create --environment development
+  claude-env-utils mcp status --watch
+  claude-env-utils init create my-project --template nodejs
+
+For utility-specific help:
+  claude-env-utils help <utility>
+""")
+
+def main():
+    """Main CLI entry point"""
+    manager = UtilitiesManager()
+    
+    if len(sys.argv) < 2:
+        show_main_help()
+        return 0
+    
+    command = sys.argv[1]
+    args = sys.argv[2:] if len(sys.argv) > 2 else []
+    
+    try:
+        if command == "list":
+            manager.list_utilities()
+            return 0
+        
+        elif command == "quick-check":
+            return manager.run_quick_checks()
+        
+        elif command == "status":
+            return manager.show_system_status()
+        
+        elif command == "help":
+            if not args:
+                show_main_help()
+                return 0
+            else:
+                return 0 if manager.show_utility_help(args[0]) else 1
+        
+        elif command in ["--help", "-h"]:
+            show_main_help()
+            return 0
+        
+        elif command in manager.utilities:
+            return manager.run_utility(command, args)
+        
+        else:
+            if RICH_AVAILABLE and console:
+                console.print(f"[red]❌ Unknown command: {command}[/red]")
+                console.print("[dim]Use 'claude-env-utils help' for usage information[/dim]")
+            else:
+                print(f"❌ Unknown command: {command}")
+                print("Use 'claude-env-utils help' for usage information")
+            return 1
+    
+    except KeyboardInterrupt:
+        if RICH_AVAILABLE and console:
+            console.print("\n[yellow]Operation cancelled[/yellow]")
+        else:
+            print("\nOperation cancelled")
+        return 130
+    except Exception as e:
+        if RICH_AVAILABLE and console:
+            console.print(f"[red]❌ Command failed: {e}[/red]")
+        else:
+            print(f"❌ Command failed: {e}")
+        return 1
+
+if __name__ == "__main__":
+    sys.exit(main())

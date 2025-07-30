@@ -1,0 +1,276 @@
+# MCP Server Configuration for Claude Development Environment
+# This file defines the MCP servers that will be deployed and managed by the orchestrator
+
+version: "1.0"
+metadata:
+  name: "Claude Environment MCP Servers"
+  description: "Configuration for MCP servers in Claude development environment"
+  updated: "2024-01-28"
+
+# Default configuration for all servers
+defaults:
+  deploymentType: "docker"
+  resources:
+    memory: 512000000  # 512MB
+    cpu: 512          # 0.5 CPU cores
+  healthCheck:
+    enabled: true
+    interval: 30000   # 30 seconds
+    timeout: 5000     # 5 seconds
+    retries: 3
+  scaling:
+    enabled: false
+    minInstances: 1
+    maxInstances: 3
+    targetCpuUtilization: 70
+    targetMemoryUtilization: 80
+
+# MCP Server definitions
+servers:
+  # Context7 - Documentation and Context Server
+  context7:
+    id: "context7-main"
+    type: "context7"
+    deploymentType: "docker"
+    image: "mcp/context7:latest"
+    port: 8080
+    environment:
+      MCP_SERVER_TYPE: "context7"
+      LOG_LEVEL: "info"
+      CACHE_TTL: "300"
+      MAX_CONTEXT_SIZE: "50000"
+    healthCheck:
+      enabled: true
+      path: "/health"
+      interval: 30000
+      timeout: 5000
+      retries: 3
+    scaling:
+      enabled: true
+      minInstances: 1
+      maxInstances: 2
+      targetCpuUtilization: 80
+    capabilities:
+      - "documentation-search"
+      - "context-retrieval"
+      - "pattern-matching"
+    priority: "high"
+
+  # Sequential - Complex Analysis and Reasoning Server
+  sequential:
+    id: "sequential-main"
+    type: "sequential"
+    deploymentType: "docker"
+    image: "mcp/sequential:latest"
+    port: 8081
+    environment:
+      MCP_SERVER_TYPE: "sequential"
+      LOG_LEVEL: "info"
+      MAX_THINKING_DEPTH: "10"
+      ANALYSIS_TIMEOUT: "60000"
+    healthCheck:
+      enabled: true
+      path: "/health"
+      interval: 30000
+      timeout: 10000  # Longer timeout for analysis server
+      retries: 3
+    resources:
+      memory: 1073741824  # 1GB for complex analysis
+      cpu: 1024          # 1 CPU core
+    scaling:
+      enabled: true
+      minInstances: 1
+      maxInstances: 3
+      targetCpuUtilization: 75
+    capabilities:
+      - "complex-analysis"
+      - "multi-step-reasoning"
+      - "problem-solving"
+      - "architectural-analysis"
+    priority: "high"
+
+  # Magic - UI Component Generation Server
+  magic:
+    id: "magic-main"
+    type: "magic"
+    deploymentType: "docker"
+    image: "mcp/magic:latest"
+    port: 8082
+    environment:
+      MCP_SERVER_TYPE: "magic"
+      LOG_LEVEL: "info"
+      UI_FRAMEWORKS: "react,vue,angular"
+      COMPONENT_CACHE: "true"
+    healthCheck:
+      enabled: true
+      path: "/health"
+      interval: 30000
+      timeout: 5000
+      retries: 3
+    scaling:
+      enabled: true
+      minInstances: 1
+      maxInstances: 2
+      targetCpuUtilization: 70
+    capabilities:
+      - "ui-generation"
+      - "component-creation"
+      - "design-system"
+      - "responsive-design"
+    priority: "medium"
+
+  # Filesystem - File Operations Server
+  filesystem:
+    id: "filesystem-main"
+    type: "filesystem"
+    deploymentType: "docker"
+    image: "mcp/filesystem:latest"
+    port: 8083
+    environment:
+      MCP_SERVER_TYPE: "filesystem"
+      LOG_LEVEL: "info"
+      WORKSPACE_PATH: "/workspace"
+      MAX_FILE_SIZE: "10485760"  # 10MB
+    healthCheck:
+      enabled: true
+      path: "/health"
+      interval: 30000
+      timeout: 5000
+      retries: 3
+    volumes:
+      - "/workspace:/workspace:rw"
+    capabilities:
+      - "file-operations"
+      - "directory-management"
+      - "file-search"
+      - "content-analysis"
+    priority: "medium"
+    security:
+      readOnly: false
+      allowedPaths:
+        - "/workspace"
+        - "/tmp"
+      deniedPaths:
+        - "/etc"
+        - "/usr"
+        - "/var"
+
+  # Development-specific servers
+  dev-tools:
+    id: "dev-tools-main"
+    type: "dev-tools"
+    deploymentType: "docker"
+    image: "mcp/dev-tools:latest"
+    port: 8084
+    environment:
+      MCP_SERVER_TYPE: "dev-tools"
+      LOG_LEVEL: "info"
+      SUPPORTED_LANGUAGES: "typescript,python,go,rust"
+    healthCheck:
+      enabled: true
+      path: "/health"
+      interval: 30000
+      timeout: 5000
+      retries: 3
+    capabilities:
+      - "code-analysis"
+      - "linting"
+      - "formatting"
+      - "dependency-management"
+    priority: "low"
+    enabled: false  # Disabled by default
+
+# Load balancing configuration
+loadBalancing:
+  strategy: "resource-based"  # round-robin, least-connections, resource-based, weighted
+  healthCheckInterval: 30000
+  unhealthyThreshold: 3
+  recoveryThreshold: 2
+  weights:
+    context7: 1.0
+    sequential: 1.2    # Higher weight for complex analysis
+    magic: 0.8
+    filesystem: 1.0
+    dev-tools: 0.5
+
+# Monitoring and metrics configuration
+monitoring:
+  enabled: true
+  metricsPort: 9090
+  healthDashboard: true
+  alerting:
+    enabled: true
+    channels:
+      - type: "webhook"
+        url: "http://api-gateway:3000/alerts/mcp"
+      - type: "log"
+        level: "error"
+  retention:
+    metrics: "24h"
+    logs: "7d"
+    health: "30d"
+
+# Security configuration
+security:
+  authentication:
+    enabled: false  # Disabled for development
+    type: "jwt"
+  networkPolicies:
+    enabled: true
+    allowedOrigins:
+      - "http://localhost:3000"
+      - "http://api-gateway:3000"
+    deniedIPs: []
+  resourceLimits:
+    enforced: true
+    maxConcurrentRequests: 100
+    maxRequestSize: "10MB"
+    rateLimiting:
+      enabled: true
+      requestsPerMinute: 1000
+
+# Development environment specific settings
+development:
+  hotReload: true
+  debugMode: true
+  verboseLogging: true
+  mockData: false
+  testMode: false
+  performance:
+    enableProfiling: true
+    enableTracing: true
+
+# Production environment specific settings (for reference)
+production:
+  hotReload: false
+  debugMode: false
+  verboseLogging: false
+  mockData: false
+  testMode: false
+  security:
+    authentication:
+      enabled: true
+      type: "jwt"
+    encryption:
+      enabled: true
+      algorithm: "AES-256-GCM"
+  performance:
+    enableProfiling: false
+    enableTracing: true
+    optimization: "aggressive"
+
+# Deployment environments
+environments:
+  development:
+    active: true
+    replicas: 1
+    autoScale: false
+  staging:
+    active: false
+    replicas: 2
+    autoScale: true
+  production:
+    active: false
+    replicas: 3
+    autoScale: true
+    highAvailability: true

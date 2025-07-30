@@ -37,6 +37,7 @@ services:
       - ENVIRONMENT_CONTROLLER_URL=http://localhost:3001
       - MCP_ORCHESTRATOR_URL=http://localhost:3002
       - CONFIGURATION_MANAGER_URL=http://localhost:3003
+      - GITOPS_CONTROLLER_URL=http://localhost:5000
       # Monitoring URLs
       - PROMETHEUS_URL=http://prometheus:9090
       - GRAFANA_URL=http://grafana:3000

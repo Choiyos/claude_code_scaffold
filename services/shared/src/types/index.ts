@@ -94,14 +94,64 @@ export enum MCPServerStatus {
   STOPPING = 'stopping'
 }
 
+export interface Configuration {
+  id: string;
+  name: string;
+  description?: string;
+  type: string;
+  data: any;
+  schemaId?: string;
+  version: number;
+  checksum: string;
+  metadata: {
+    userId: string;
+    teamId?: string;
+    environment?: string;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface ConfigurationSchema {
   id: string;
   name: string;
+  description?: string;
   version: string;
   schema: Record<string, any>;
-  metadata: Record<string, any>;
+  metadata: {
+    userId: string;
+  };
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface ConfigurationBackup {
+  id: string;
+  configurationId: string;
+  version: number;
+  data: any;
+  reason: string;
+  createdAt: Date;
+}
+
+export interface ConfigurationDrift {
+  configurationId: string;
+  detectedAt: Date;
+  severity: 'info' | 'warning' | 'error';
+  description: string;
+  currentChecksum: string;
+  fileChecksum: string | null;
+}
+
+export interface ConfigurationValidationResult {
+  isValid: boolean;
+  errors: ConfigurationValidationError[];
+}
+
+export interface ConfigurationValidationError {
+  path: string;
+  message: string;
+  value?: any;
 }
 
 export interface ConfigurationValue {

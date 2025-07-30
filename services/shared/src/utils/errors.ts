@@ -29,9 +29,14 @@ export class ValidationError extends AppError {
 }
 
 export class NotFoundError extends AppError {
+  public readonly resource?: string;
+  public readonly resourceId?: string;
+
   constructor(resource: string, id?: string) {
     const message = id ? `${resource} with id ${id} not found` : `${resource} not found`;
     super(message, 404, 'NOT_FOUND', true, { resource, id });
+    this.resource = resource;
+    this.resourceId = id;
   }
 }
 
@@ -66,8 +71,11 @@ export class DockerError extends AppError {
 }
 
 export class ConfigurationError extends AppError {
-  constructor(message: string, details?: Record<string, any>) {
-    super(message, 500, 'CONFIGURATION_ERROR', true, details);
+  public readonly configPath?: string;
+
+  constructor(message: string, configPath?: string, details?: Record<string, any>) {
+    super(message, 422, 'CONFIGURATION_ERROR', true, details);
+    this.configPath = configPath;
   }
 }
 
