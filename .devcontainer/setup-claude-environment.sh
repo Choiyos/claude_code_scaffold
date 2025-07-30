@@ -36,19 +36,46 @@ install_claude_code() {
         return 1
     fi
     
-    # Claude Code CLI 설치 시도
-    if npm install -g @anthropic-ai/claude-code@1.0.63; then
-        log_success "Claude Code CLI 설치 완료"
-    else
-        log_warning "Claude Code CLI 공식 패키지를 찾을 수 없습니다. 수동 설치가 필요할 수 있습니다."
+    # Claude Code CLI 설치 시도 (정확한 패키지명 시도)
+    local claude_packages=(
+        "@anthropic-ai/claude-code@1.0.63"
+        "@anthropic/claude-code"
+        "claude-code"
+    )
+    
+    local installed=false
+    for package in "${claude_packages[@]}"; do
+        log_info "시도 중: $package"
+        if npm install -g "$package" 2>/dev/null; then
+            log_success "Claude Code CLI 설치 완료: $package"
+            installed=true
+            break
+        fi
+    done
+    
+    if [ "$installed" = false ]; then
+        log_warning "Claude Code CLI 공식 패키지를 찾을 수 없습니다."
+        log_info "수동으로 Claude Code를 설치해야 할 수 있습니다."
+    fi
+    
+    # PATH 환경변수에 npm global bin 추가
+    local npm_global_bin=$(npm config get prefix)/bin
+    if [[ ":$PATH:" != *":$npm_global_bin:"* ]]; then
+        export PATH="$npm_global_bin:$PATH"
+        echo "export PATH=\"$npm_global_bin:\$PATH\"" >> ~/.zshrc
+        echo "export PATH=\"$npm_global_bin:\$PATH\"" >> ~/.bashrc
+        log_info "NPM global bin을 PATH에 추가했습니다: $npm_global_bin"
     fi
     
     # Claude Code 설치 확인
     if command -v claude-code &> /dev/null; then
         log_success "Claude Code CLI 설치 확인됨"
-        claude-code --version
+        claude-code --version 2>/dev/null || echo "Claude Code CLI 실행 가능"
     else
         log_warning "Claude Code CLI가 PATH에서 찾을 수 없습니다."
+        log_info "가능한 위치들:"
+        find /usr/local -name "*claude*" 2>/dev/null || true
+        find ~/.npm-global -name "*claude*" 2>/dev/null || true
     fi
 }
 
@@ -81,15 +108,70 @@ setup_claude_config() {
     # Claude 설정 디렉토리 생성
     mkdir -p ~/.claude
     
-    # 팀 설정 파일들을 개인 설정으로 복사
-    if [ -f "/workspace/team-config/claude-config.json" ]; then
-        cp "/workspace/team-config/claude-config.json" ~/.claude/config.json
-        log_success "Claude 기본 설정 복사 완료"
+    # 현재 작업 디렉토리 확인 및 조정
+    local workspace_dir
+    if [ -d "/workspaces/claude_code_scaffold" ]; then
+        workspace_dir="/workspaces/claude_code_scaffold"
+    elif [ -d "/workspace" ]; then
+        workspace_dir="/workspace"
+    else
+        workspace_dir="$(pwd)"
     fi
     
-    if [ -f "/workspace/team-config/mcp-servers.json" ]; then
-        cp "/workspace/team-config/mcp-servers.json" ~/.claude/mcp-servers.json
+    log_info "설정 파일 경로: $workspace_dir/team-config/"
+    
+    # 팀 설정 파일들을 개인 설정으로 복사
+    if [ -f "$workspace_dir/team-config/claude-config.json" ]; then
+        cp "$workspace_dir/team-config/claude-config.json" ~/.claude/config.json
+        log_success "Claude 기본 설정 복사 완료"
+    else
+        log_warning "팀 Claude 설정 파일을 찾을 수 없습니다: $workspace_dir/team-config/claude-config.json"
+        # 기본 설정 파일 생성
+        cat > ~/.claude/config.json << 'EOF'
+{
+  "allowedTools": [],
+  "hasTrustDialogAccepted": true,
+  "hasCompletedProjectOnboarding": true,
+  "theme": "dark",
+  "model": "sonnet"
+}
+EOF
+        log_info "기본 Claude 설정 파일을 생성했습니다."
+    fi
+    
+    if [ -f "$workspace_dir/team-config/mcp-servers.json" ]; then
+        cp "$workspace_dir/team-config/mcp-servers.json" ~/.claude/mcp-servers.json
         log_success "MCP 서버 설정 복사 완료"
+    else
+        log_warning "팀 MCP 설정 파일을 찾을 수 없습니다: $workspace_dir/team-config/mcp-servers.json"
+        # 기본 MCP 설정 파일 생성
+        cat > ~/.claude/mcp-servers.json << 'EOF'
+{
+  "mcpServers": {
+    "sequential": {
+      "command": "node",
+      "args": ["@modelcontextprotocol/server-sequential-thinking"],
+      "description": "Multi-step reasoning and systematic analysis"
+    },
+    "context7": {
+      "command": "node", 
+      "args": ["@upstash/context7-mcp"],
+      "description": "Latest documentation and library information"
+    },
+    "magic": {
+      "command": "node",
+      "args": ["@21st-dev/magic"],
+      "description": "UI component generation"
+    },
+    "playwright": {
+      "command": "node",
+      "args": ["@playwright/mcp"],
+      "description": "Browser automation and testing"
+    }
+  }
+}
+EOF
+        log_info "기본 MCP 서버 설정 파일을 생성했습니다."
     fi
     
     # 설정 파일 권한 조정
@@ -144,11 +226,29 @@ setup_git_config() {
 start_services() {
     log_info "인프라 서비스 시작 중..."
     
-    if [ -f "/workspace/docker-compose.yml" ]; then
-        cd /workspace
+    # 현재 작업 디렉토리 확인 및 조정
+    local workspace_dir
+    if [ -d "/workspaces/claude_code_scaffold" ]; then
+        workspace_dir="/workspaces/claude_code_scaffold"
+    elif [ -d "/workspace" ]; then
+        workspace_dir="/workspace"
+    else
+        workspace_dir="$(pwd)"
+    fi
+    
+    if [ -f "$workspace_dir/docker-compose.yml" ]; then
+        cd "$workspace_dir"
+        log_info "Docker Compose 파일 위치: $workspace_dir/docker-compose.yml"
         
         # PostgreSQL, Redis, Prometheus, Grafana만 시작 (실패하는 TypeScript 서비스 제외)
-        docker-compose up -d postgres redis prometheus grafana
+        if command -v docker-compose &> /dev/null; then
+            docker-compose up -d postgres redis prometheus grafana
+        elif command -v docker &> /dev/null && docker compose version &> /dev/null; then
+            docker compose up -d postgres redis prometheus grafana
+        else
+            log_warning "Docker Compose를 찾을 수 없습니다. 서비스를 수동으로 시작해야 합니다."
+            return 1
+        fi
         
         if [ $? -eq 0 ]; then
             log_success "인프라 서비스 시작 완료"
@@ -159,9 +259,13 @@ start_services() {
             log_info "  - Redis: localhost:6379"
         else
             log_warning "일부 서비스 시작에 실패했을 수 있습니다."
+            log_info "서비스 상태 확인: docker-compose ps"
         fi
     else
-        log_warning "docker-compose.yml 파일을 찾을 수 없습니다."
+        log_warning "docker-compose.yml 파일을 찾을 수 없습니다: $workspace_dir/docker-compose.yml"
+        log_info "가능한 위치들을 확인합니다:"
+        find /workspaces -name "docker-compose.yml" 2>/dev/null || true
+        find /workspace -name "docker-compose.yml" 2>/dev/null || true
     fi
 }
 
