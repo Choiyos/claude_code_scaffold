@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash"
+    ],
+    "deny": [
+      "Bash(npm deploy)",
+      "Bash(yarn deploy)",
+      "Bash(npm:deploy)",
+      "Bash(yarn:deploy)"
+    ]
+  },
+  "model": "sonnet"
+}

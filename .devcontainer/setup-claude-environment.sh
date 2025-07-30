@@ -83,9 +83,9 @@ install_claude_code() {
 install_mcp_servers() {
     log_info "MCP 서버들 설치 중..."
     
-    # MCP 서버들 설치
+    # MCP 서버들 설치 (전역 설치)
     local servers=(
-        "@modelcontextprotocol/server-sequential-thinking"
+        "@modelcontextprotocol/server-sequential-thinking"  
         "@upstash/context7-mcp"
         "@21st-dev/magic"
         "@playwright/mcp"
@@ -95,88 +95,59 @@ install_mcp_servers() {
         log_info "설치 중: $server"
         if npm install -g "$server"; then
             log_success "$server 설치 완료"
+            
+            # 설치된 패키지 경로 확인
+            local package_path=$(npm list -g "$server" --depth=0 2>/dev/null | grep "$server" || true)
+            if [ -n "$package_path" ]; then
+                log_info "설치 위치: $package_path"
+            fi
         else
             log_warning "$server 설치 실패 - 수동 설치가 필요할 수 있습니다."
         fi
     done
+    
+    # 설치 검증
+    log_info "설치된 MCP 서버 검증 중..."
+    for server in "${servers[@]}"; do
+        if npx "$server" --help &>/dev/null || npx "$server" --version &>/dev/null; then
+            log_success "$server: npx로 실행 가능"
+        else
+            log_warning "$server: npx로 실행할 수 없음. 수동 확인 필요"
+        fi
+    done
+    
+    # npm 글로벌 패키지 목록 표시
+    log_info "설치된 모든 글로벌 패키지:"
+    npm list -g --depth=0 | grep -E "(sequential|context7|magic|playwright)" || echo "  MCP 관련 패키지 없음"
 }
 
-# Claude Code 환경 설정
+# Claude Code 환경 설정 (Volume Mount 방식)
 setup_claude_config() {
-    log_info "Claude Code 환경 설정 중..."
+    log_info "Claude Code 환경 설정 중 (Volume Mount 방식)..."
     
-    # Claude 설정 디렉토리 생성
-    mkdir -p ~/.claude
-    
-    # 현재 작업 디렉토리 확인 및 조정
-    local workspace_dir
-    if [ -d "/workspaces/claude_code_scaffold" ]; then
-        workspace_dir="/workspaces/claude_code_scaffold"
-    elif [ -d "/workspace" ]; then
-        workspace_dir="/workspace"
+    # Volume Mount로 이미 ~/.claude가 config/claude와 연결되어 있음
+    if [ -d ~/.claude ]; then
+        log_success "Claude 설정 디렉토리가 Volume Mount로 연결되어 있습니다: ~/.claude"
+        
+        # 연결된 파일들 확인
+        if [ -f ~/.claude/config.json ]; then
+            log_success "Claude 기본 설정 파일 확인: ~/.claude/config.json"
+        fi
+        
+        if [ -f ~/.claude/mcp.json ]; then
+            log_success "MCP 서버 설정 파일 확인: ~/.claude/mcp.json"
+        fi
+        
+        # 설정 파일 권한 조정
+        chmod 600 ~/.claude/config.json 2>/dev/null || true
+        chmod 600 ~/.claude/mcp.json 2>/dev/null || true
+        
+        log_info "Volume Mount 설정으로 팀 설정이 실시간 동기화됩니다."
+        log_info "컨테이너에서 ~/.claude/ 파일 수정 시 자동으로 Git 변경점으로 잡힙니다."
     else
-        workspace_dir="$(pwd)"
+        log_error "Volume Mount 설정에 문제가 있습니다. ~/.claude 디렉토리를 찾을 수 없습니다."
+        return 1
     fi
-    
-    log_info "설정 파일 경로: $workspace_dir/team-config/"
-    
-    # 팀 설정 파일들을 개인 설정으로 복사
-    if [ -f "$workspace_dir/team-config/claude-config.json" ]; then
-        cp "$workspace_dir/team-config/claude-config.json" ~/.claude/config.json
-        log_success "Claude 기본 설정 복사 완료"
-    else
-        log_warning "팀 Claude 설정 파일을 찾을 수 없습니다: $workspace_dir/team-config/claude-config.json"
-        # 기본 설정 파일 생성
-        cat > ~/.claude/config.json << 'EOF'
-{
-  "allowedTools": [],
-  "hasTrustDialogAccepted": true,
-  "hasCompletedProjectOnboarding": true,
-  "theme": "dark",
-  "model": "sonnet"
-}
-EOF
-        log_info "기본 Claude 설정 파일을 생성했습니다."
-    fi
-    
-    if [ -f "$workspace_dir/team-config/mcp-servers.json" ]; then
-        cp "$workspace_dir/team-config/mcp-servers.json" ~/.claude/mcp-servers.json
-        log_success "MCP 서버 설정 복사 완료"
-    else
-        log_warning "팀 MCP 설정 파일을 찾을 수 없습니다: $workspace_dir/team-config/mcp-servers.json"
-        # 기본 MCP 설정 파일 생성
-        cat > ~/.claude/mcp-servers.json << 'EOF'
-{
-  "mcpServers": {
-    "sequential": {
-      "command": "node",
-      "args": ["@modelcontextprotocol/server-sequential-thinking"],
-      "description": "Multi-step reasoning and systematic analysis"
-    },
-    "context7": {
-      "command": "node", 
-      "args": ["@upstash/context7-mcp"],
-      "description": "Latest documentation and library information"
-    },
-    "magic": {
-      "command": "node",
-      "args": ["@21st-dev/magic"],
-      "description": "UI component generation"
-    },
-    "playwright": {
-      "command": "node",
-      "args": ["@playwright/mcp"],
-      "description": "Browser automation and testing"
-    }
-  }
-}
-EOF
-        log_info "기본 MCP 서버 설정 파일을 생성했습니다."
-    fi
-    
-    # 설정 파일 권한 조정
-    chmod 600 ~/.claude/config.json 2>/dev/null || true
-    chmod 600 ~/.claude/mcp-servers.json 2>/dev/null || true
 }
 
 # Python 환경 설정

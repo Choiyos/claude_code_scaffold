@@ -1,0 +1,31 @@
+{
+  "mcpServers": {
+    "sequential": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["@modelcontextprotocol/server-sequential-thinking"]
+    },
+    "context7": {
+      "type": "stdio", 
+      "command": "npx",
+      "args": ["@upstash/context7-mcp"],
+      "env": {
+        "UPSTASH_REDIS_REST_URL": "YOUR_UPSTASH_REDIS_REST_URL_HERE",
+        "UPSTASH_REDIS_REST_TOKEN": "YOUR_UPSTASH_REDIS_REST_TOKEN_HERE"
+      }
+    },
+    "magic": {
+      "type": "stdio",
+      "command": "npx", 
+      "args": ["@21st-dev/magic"],
+      "env": {
+        "TWENTYFIRST_API_KEY": "YOUR_21ST_API_KEY_HERE"
+      }
+    },
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["@playwright/mcp"]
+    }
+  }
+}
