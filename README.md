@@ -51,9 +51,10 @@ docker-compose ps
 - **설정 파일**: Windows 환경과 동일한 설정 자동 적용
 
 ### 개발 런타임
-- **Node.js**: 18.20.8
+- **Node.js**: Volta로 프로젝트별 자동 관리
 - **Python**: 3.11
 - **Shell**: Zsh + Oh My Zsh
+- **Volta**: Node.js 버전 관리자
 
 ### 인프라 서비스
 - **PostgreSQL**: 5432 포트
@@ -80,17 +81,23 @@ docker-compose ps
 ## 📁 디렉토리 구조
 
 ```
-claude-dev-env/
+claude_code_scaffold/
 ├── .devcontainer/              # DevContainer 설정
-│   ├── devcontainer.json      # VS Code 컨테이너 설정
-│   ├── Dockerfile             # 컨테이너 이미지 정의
+│   ├── devcontainer.json      # VS Code 컨테이너 설정 (Volume Mount 포함)
+│   ├── Dockerfile             # 컨테이너 이미지 정의 (Volta 포함)
 │   └── setup-claude-environment.sh  # 환경 설정 스크립트
-├── team-config/               # 팀 공통 설정
-│   ├── claude-config.json     # Claude Code 기본 설정
-│   └── mcp-servers.json       # MCP 서버 설정
-├── config/                    # 인프라 설정
-│   └── prometheus.yml         # Prometheus 설정
+├── config/                    # 팀 설정 및 인프라
+│   ├── claude/               # Claude Code 설정 (Volume Mount)
+│   │   ├── config.json       # Claude 기본 설정
+│   │   ├── mcp.json          # MCP 서버 설정
+│   │   └── .env.example      # API 키 예제
+│   └── prometheus.yml        # Prometheus 설정
+├── workspace/                 # 개발 프로젝트 작업 공간 (Git ignore)
+│   ├── README.md             # 사용법 가이드
+│   └── (개발 프로젝트들...)   # git clone으로 추가
+├── scripts/                   # 관리 스크립트
 ├── docker-compose.yml         # 인프라 서비스 정의
+├── .gitignore                # workspace/ 제외
 └── README.md                  # 이 파일
 ```
 
@@ -143,11 +150,29 @@ docker-compose restart
 
 ## 📝 개발 워크플로우
 
+### 환경 설정 (한 번만)
 1. **프로젝트 시작**: VS Code에서 DevContainer 열기
-2. **개발 작업**: Claude Code CLI 사용하여 개발
-3. **설정 동기화**: 팀 Claude/MCP 설정 자동 관리
-4. **모니터링**: Grafana 대시보드에서 메트릭 확인
-5. **종료**: VS Code 닫기 (컨테이너 자동 정리)
+2. **환경 검증**: Claude Code CLI 및 MCP 서버 확인
+
+### 실제 개발 작업
+1. **프로젝트 클론**:
+   ```bash
+   cd /workspaces/claude_code_scaffold/workspace
+   git clone https://github.com/username/my-project.git
+   cd my-project
+   ```
+
+2. **자동 환경 설정**: Volta가 프로젝트의 Node.js 버전 자동 적용
+
+3. **Claude Code 개발**: 
+   ```bash
+   npm install
+   claude-code .  # 또는 현재 디렉토리에서 Claude Code 사용
+   ```
+
+4. **설정 동기화**: 필요시 `~/.claude/` 파일 수정으로 팀 설정 업데이트
+
+5. **모니터링**: Grafana 대시보드에서 메트릭 확인
 
 ## 🔄 팀 설정 관리
 

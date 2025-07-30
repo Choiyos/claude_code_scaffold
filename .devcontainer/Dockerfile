@@ -29,6 +29,13 @@ WORKDIR /home/developer
 
 RUN sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
 
+# Volta 설치 (Node.js 버전 관리)
+RUN curl https://get.volta.sh | bash
+
+# Volta 환경변수 설정
+ENV VOLTA_HOME="/home/developer/.volta"
+ENV PATH="$VOLTA_HOME/bin:$PATH"
+
 # 사용자를 root로 변경하여 시스템 설정 계속
 USER root
 

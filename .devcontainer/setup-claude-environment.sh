@@ -251,6 +251,10 @@ setup_zsh_config() {
 export PATH="$HOME/.local/bin:$PATH"
 export PYTHONPATH="/workspace:$PYTHONPATH"
 
+# Volta 설정 (Node.js 버전 관리)
+export VOLTA_HOME="$HOME/.volta"
+export PATH="$VOLTA_HOME/bin:$PATH"
+
 # 유용한 별칭
 alias ll='ls -alF'
 alias la='ls -A'

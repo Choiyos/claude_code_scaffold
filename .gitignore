@@ -1,0 +1,36 @@
+# 개발 프로젝트 작업 공간 (개별 Git 저장소들)
+workspace/
+
+# API 키 및 환경변수 파일
+config/claude/.env
+*.env
+!.env.example
+
+# 로그 파일
+*.log
+logs/
+
+# 임시 파일
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# IDE 설정
+.vscode/settings.json
+.vscode/launch.json
+.idea/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Docker
+.docker/
+
+# 백업 파일
+*.backup
+*.bak
+.config-backups/
