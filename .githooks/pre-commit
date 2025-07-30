@@ -1,0 +1,94 @@
+#!/bin/bash
+
+# Git pre-commit hook: 팀 설정 변경 전 검증
+
+set -e
+
+# 색상 정의
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+log_info() { echo -e "${BLUE}[CONFIG-VALIDATION]${NC} $1"; }
+log_success() { echo -e "${GREEN}[CONFIG-VALIDATION]${NC} $1"; }
+log_warning() { echo -e "${YELLOW}[CONFIG-VALIDATION]${NC} $1"; }
+log_error() { echo -e "${RED}[CONFIG-VALIDATION]${NC} $1"; }
+
+# 설정 파일 경로
+TEAM_CONFIG_DIR="team-config"
+
+# team-config 디렉토리의 변경사항이 있는지 확인
+if git diff --cached --name-only | grep -q "^$TEAM_CONFIG_DIR/"; then
+    log_info "팀 설정 파일 변경사항 검증 중..."
+    
+    # 스테이징된 설정 파일들 검증
+    for file in $(git diff --cached --name-only | grep "^$TEAM_CONFIG_DIR/.*\.json$"); do
+        log_info "검증 중: $file"
+        
+        # 임시 파일로 스테이징된 내용 추출
+        temp_file=$(mktemp)
+        git show ":$file" > "$temp_file"
+        
+        # JSON 문법 검증
+        if ! jq empty "$temp_file" 2>/dev/null; then
+            log_error "JSON 문법 오류가 발견되었습니다: $file"
+            rm "$temp_file"
+            exit 1
+        fi
+        
+        # MCP 서버 설정 추가 검증
+        if [[ "$file" == *"mcp-servers.json" ]]; then
+            # 필수 필드 확인
+            if ! jq -e '.mcpServers' "$temp_file" >/dev/null 2>&1; then
+                log_error "MCP 서버 설정에서 'mcpServers' 필드가 누락되었습니다: $file"
+                rm "$temp_file"
+                exit 1
+            fi
+            
+            # 각 서버 설정 검증
+            while IFS= read -r server_name; do
+                if ! jq -e ".mcpServers.\"$server_name\".command" "$temp_file" >/dev/null 2>&1; then
+                    log_error "MCP 서버 '$server_name'에서 'command' 필드가 누락되었습니다: $file"
+                    rm "$temp_file"
+                    exit 1
+                fi
+                
+                if ! jq -e ".mcpServers.\"$server_name\".args" "$temp_file" >/dev/null 2>&1; then
+                    log_error "MCP 서버 '$server_name'에서 'args' 필드가 누락되었습니다: $file"
+                    rm "$temp_file"
+                    exit 1
+                fi
+            done < <(jq -r '.mcpServers | keys[]' "$temp_file" 2>/dev/null)
+            
+            log_success "MCP 서버 설정 검증 통과: $file"
+        fi
+        
+        # Claude 설정 파일 검증
+        if [[ "$file" == *"claude-config.json" ]]; then
+            # 필수 필드들 확인
+            required_fields=("allowedTools" "hasTrustDialogAccepted" "hasCompletedProjectOnboarding")
+            
+            for field in "${required_fields[@]}"; do
+                if ! jq -e ".$field" "$temp_file" >/dev/null 2>&1; then
+                    log_warning "Claude 설정에서 '$field' 필드가 누락되었습니다: $file"
+                fi
+            done
+            
+            log_success "Claude 설정 검증 통과: $file"
+        fi
+        
+        rm "$temp_file"
+        log_success "검증 완료: $file"
+    done
+    
+    # 변경사항 요약
+    echo ""
+    log_info "팀 설정 변경사항 요약:"
+    git diff --cached --stat "$TEAM_CONFIG_DIR/"
+    
+    echo ""
+    log_success "모든 설정 파일 검증이 완료되었습니다."
+    log_info "이 변경사항은 팀 전체의 Claude Code 환경에 영향을 줍니다."
+fi

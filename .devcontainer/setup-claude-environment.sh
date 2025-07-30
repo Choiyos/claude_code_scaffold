@@ -130,6 +130,13 @@ setup_git_config() {
     git config --global alias.last 'log -1 HEAD'
     git config --global alias.graph 'log --oneline --graph --decorate --all'
     
+    # Git Hooks 설치 (팀 설정 동기화용)
+    if [ -f "/workspace/scripts/install-git-hooks.sh" ]; then
+        cd /workspace
+        bash scripts/install-git-hooks.sh
+        log_success "Git Hooks 설치 완료 (팀 설정 자동 동기화 활성화)"
+    fi
+    
     log_success "Git 설정 완료"
 }
 

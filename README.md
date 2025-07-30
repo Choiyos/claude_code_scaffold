@@ -145,8 +145,37 @@ docker-compose restart
 
 1. **프로젝트 시작**: VS Code에서 DevContainer 열기
 2. **개발 작업**: Claude Code CLI 사용하여 개발
-3. **모니터링**: Grafana 대시보드에서 메트릭 확인
-4. **종료**: VS Code 닫기 (컨테이너 자동 정리)
+3. **설정 동기화**: 팀 Claude/MCP 설정 자동 관리
+4. **모니터링**: Grafana 대시보드에서 메트릭 확인
+5. **종료**: VS Code 닫기 (컨테이너 자동 정리)
+
+## 🔄 팀 설정 관리
+
+### Git 기반 자동 동기화
+팀원들의 Claude Code 및 MCP 설정을 Git으로 체계적으로 관리합니다.
+
+```bash
+# 팀 설정을 내 환경으로 동기화
+bash scripts/sync-team-config.sh pull
+
+# 내 설정을 팀에 제안 (PR 생성)
+bash scripts/sync-team-config.sh push
+
+# 설정 상태 및 변경 이력 확인
+bash scripts/sync-team-config.sh status
+```
+
+### 자동 알림 시스템
+- **설정 변경 감지**: Git Hooks로 팀 설정 변경 시 자동 알림
+- **검증 시스템**: 커밋 전 JSON 문법 및 필수 필드 자동 검증
+- **충돌 해결**: 설정 충돌 시 자동 해결 도구 제공
+
+### 설정 파일 관리
+- `team-config/claude-config.json`: Claude Code 기본 설정
+- `team-config/mcp-servers.json`: MCP 서버 목록 및 설정
+- 자동 백업 및 버전 관리 지원
+
+📖 **자세한 사용법**: [팀 설정 관리 가이드](TEAM-CONFIG-GUIDE.md)
 
 ## ⚡ 성능 최적화
 
