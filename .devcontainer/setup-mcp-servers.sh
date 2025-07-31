@@ -81,20 +81,27 @@ check_claude_auth() {
 add_mcp_servers() {
     log_info "🔧 MCP 서버 등록 시작..."
     
-    # MCP 서버 배열: [패키지명]=[실행명령어]
-    declare -A servers=(
-        ["@modelcontextprotocol/server-sequential-thinking"]="npx @modelcontextprotocol/server-sequential-thinking"
-        ["@upstash/context7-mcp"]="npx @upstash/context7-mcp"
-        ["@21st-dev/magic"]="npx @21st-dev/magic"
-        ["@playwright/mcp"]="npx @playwright/mcp"
+    # MCP 서버 배열 (더 호환성 있는 방식)
+    local server_packages=(
+        "@modelcontextprotocol/server-sequential-thinking"
+        "@upstash/context7-mcp"
+        "@21st-dev/magic"
+        "@playwright/mcp"
+    )
+    
+    local server_commands=(
+        "npx @modelcontextprotocol/server-sequential-thinking"
+        "npx @upstash/context7-mcp"
+        "npx @21st-dev/magic"
+        "npx @playwright/mcp"
     )
     
     local success_count=0
-    local total_count=${#servers[@]}
+    local total_count=${#server_packages[@]}
     
     log_info "📦 등록할 MCP 서버 목록 ($total_count개):"
-    for package in "${!servers[@]}"; do
-        log_info "  - $package → ${servers[$package]}"
+    for i in "${!server_packages[@]}"; do
+        log_info "  - ${server_packages[$i]} → ${server_commands[$i]}"
     done
     log_info ""
     
@@ -111,10 +118,11 @@ add_mcp_servers() {
     fi
     log_info ""
     
-    local current=0
-    for package in "${!servers[@]}"; do
-        local command="${servers[$package]}"
-        current=$((current + 1))
+    # 서버 등록 루프
+    for i in "${!server_packages[@]}"; do
+        local package="${server_packages[$i]}"
+        local command="${server_commands[$i]}"
+        local current=$((i + 1))
         
         log_info "[$current/$total_count] 🔄 MCP 서버 등록 중: $package"
         log_info "실행 명령어: claude mcp add \"$package\" \"$command\""
