@@ -3,6 +3,9 @@
 # Claude CLI MCP 서버 자동 등록 스크립트
 # 인증 완료 후 실행하여 MCP 서버들을 Claude CLI에 등록
 
+# 스크립트 안전성 설정 (선택적)
+set -u  # 미정의 변수 사용 시 오류
+
 echo "🔧 Claude CLI MCP 서버 자동 등록을 시작합니다..."
 
 # 색상 정의
@@ -170,13 +173,15 @@ main() {
     
     # 환경 변수 확인
     log_info "🔧 환경 변수 확인:"
-    log_info "  PATH: $PATH"
-    log_info "  HOME: $HOME"
-    if [ -n "$ANTHROPIC_API_KEY" ]; then
-        log_info "  ANTHROPIC_API_KEY: [설정됨]"
-    else
-        log_info "  ANTHROPIC_API_KEY: [미설정]"
+    log_info "  PATH: ${PATH:-[미설정]}"
+    log_info "  HOME: ${HOME:-[미설정]}"
+    
+    # ANTHROPIC_API_KEY 안전한 확인
+    local api_key_status="[미설정]"
+    if [ "${ANTHROPIC_API_KEY:-}" ]; then
+        api_key_status="[설정됨]"
     fi
+    log_info "  ANTHROPIC_API_KEY: $api_key_status"
     log_info ""
     
     # 인증 상태 확인
