@@ -458,12 +458,7 @@ main() {
     setup_claude_config
     install_claude_code
     
-    # Claude CLI 설치 성공 시 MCP 설치 진행 (인증은 MCP 설치 함수 내에서 처리)
-    if command -v claude &> /dev/null; then
-        install_mcp_servers
-    else
-        log_warning "Claude CLI가 설치되지 않았으므로 MCP 서버 설치를 건너뜁니다."
-    fi
+    # MCP 서버 설치는 별도 스크립트(setup-mcp-servers.sh)에서 자동 실행됩니다
     
     setup_zsh_config
     start_services
@@ -480,7 +475,7 @@ main() {
         log_info "다음 단계:"
         log_info "  1. 터미널 재시작: exec zsh"
         log_info "  2. Claude CLI 사용: claude --help"
-        log_info "  3. MCP 서버 확인: claude mcp list"
+        log_info "  3. MCP 서버 확인: claude mcp list (자동 설치됨)"
         log_info "  4. 서비스 상태 확인: docker-compose ps"
         log_info "  5. Grafana 대시보드: http://localhost:3010"
         log_info ""

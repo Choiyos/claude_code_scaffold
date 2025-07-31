@@ -87,7 +87,7 @@ The environment is built as a portable DevContainer that provides:
 2. **Runtime Environments**: Node.js 18.20.8, Python 3.11
 3. **Shell Environment**: Zsh + Oh My Zsh with productivity enhancements
 4. **Claude CLI**: Version 1.0.64+ with npm global installation
-5. **MCP Servers**: Semi-automatic setup (Sequential, Context7, Magic, Playwright)
+5. **MCP Servers**: Fully automatic setup (Sequential, Context7, Magic, Playwright×2)
 
 ### Configuration System
 Claude CLI-based configuration management:
@@ -181,6 +181,7 @@ export ANTHROPIC_API_KEY="sk-ant-api03-..."
 3. Accept "Reopen in Container" prompt
 4. Wait 3-5 minutes for automatic setup
 5. Use Claude Code CLI immediately (인증 자동 완료)
+6. **MCP 서버 자동 설치**: 5개 MCP 서버가 자동으로 설치 및 연결됨
 
 ### Daily Development
 - Open VS Code, container resumes in seconds
