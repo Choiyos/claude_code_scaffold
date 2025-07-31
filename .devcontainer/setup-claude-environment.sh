@@ -578,15 +578,18 @@ install_superclaude() {
             # 여러 방법으로 자동 응답 시도
             local init_success=false
             
-            # 방법 1: expect를 사용한 자동화 (가장 안정적) - 전체 설치
+            # 방법 1: expect를 사용한 자동화 (가장 안정적) - Quick Installation
             if command -v expect &> /dev/null && [ "$init_success" = false ]; then
-                log_info "expect를 사용한 자동 초기화 (전체 설치)..."
+                log_info "expect를 사용한 자동 초기화 (Quick Installation)..."
                 if expect -c "
                     set timeout 60
                     spawn python3 -m SuperClaude install
                     expect {
+                        \"Enter your choice (1-3):\" { send \"1\r\"; exp_continue }
+                        \"Enter your choice*\" { send \"1\r\"; exp_continue }
                         \"Continue and update existing installation?*\" { send \"y\r\"; exp_continue }
                         \"Please enter 'y' or 'n'*\" { send \"y\r\"; exp_continue }
+                        \"Proceed with installation?*\" { send \"y\r\"; exp_continue }
                         \"*[y/N]*\" { send \"y\r\"; exp_continue }
                         \"*[Y/n]*\" { send \"y\r\"; exp_continue }
                         \"*continue*\" { send \"y\r\"; exp_continue }
@@ -597,25 +600,26 @@ install_superclaude() {
                         eof { exit 0 }
                     }
                 " >/dev/null 2>&1; then
-                    log_success "SuperClaude Framework 초기화 완료 (expect - 전체 설치)"
+                    log_success "SuperClaude Framework 초기화 완료 (expect - Quick Installation)"
                     init_success=true
                 fi
             fi
             
-            # 방법 2: yes 명령어를 사용한 자동화 - 전체 설치
+            # 방법 2: printf를 사용한 다중 응답 - Quick Installation (메뉴 선택 포함)
             if [ "$init_success" = false ]; then
-                log_info "yes 명령어를 사용한 자동 초기화 (전체 설치)..."
-                if timeout 60 bash -c 'yes "y" | python3 -m SuperClaude install' >/dev/null 2>&1; then
-                    log_success "SuperClaude Framework 초기화 완료 (yes - 전체 설치)"
+                log_info "printf를 사용한 자동 초기화 (Quick Installation)..."
+                # 1 = Quick Installation 선택, 나머지는 y 응답
+                if printf "1\ny\ny\ny\ny\ny\ny\ny\ny\ny\n" | timeout 60 python3 -m SuperClaude install >/dev/null 2>&1; then
+                    log_success "SuperClaude Framework 초기화 완료 (printf - Quick Installation)"
                     init_success=true
                 fi
             fi
             
-            # 방법 3: printf를 사용한 다중 응답 - 전체 설치
+            # 방법 3: echo를 사용한 파이프 입력 - Quick Installation
             if [ "$init_success" = false ]; then
-                log_info "printf를 사용한 자동 초기화 (전체 설치)..."
-                if printf "y\ny\ny\ny\ny\ny\ny\ny\ny\ny\n" | timeout 60 python3 -m SuperClaude install >/dev/null 2>&1; then
-                    log_success "SuperClaude Framework 초기화 완료 (printf - 전체 설치)"
+                log_info "echo를 사용한 자동 초기화 (Quick Installation)..."
+                if (echo "1"; yes "y") | timeout 60 python3 -m SuperClaude install >/dev/null 2>&1; then
+                    log_success "SuperClaude Framework 초기화 완료 (echo + yes)"
                     init_success=true
                 fi
             fi
@@ -634,6 +638,11 @@ install_superclaude() {
                 log_info "자동 초기화 실패, 기본 설치만 완료했습니다"
                 log_info "SuperClaude Framework는 정상적으로 설치되었으며 수동 초기화가 필요합니다"
                 log_info "수동 초기화: python3 -m SuperClaude install"
+                log_info "메뉴에서 1번 (Quick Installation) 선택 후 모든 프롬프트에 y 입력"
+            else
+                log_success "SuperClaude Framework 설치 및 초기화 완료!"
+                log_info "⚠️  중요: Claude Code를 재시작해야 /sc 명령어가 활성화됩니다"
+                log_info "터미널에서 'claude' 명령으로 Claude Code를 재시작하세요"
             fi
         else
             log_error "SuperClaude Framework 설치 후 import 실패"
@@ -726,9 +735,10 @@ main() {
         # SuperClaude Framework 사용법 추가
         if python3 -c "import SuperClaude" 2>/dev/null; then
             log_info "🚀 SuperClaude Framework 사용법:"
+            log_info "  Claude Code 내에서 /sc 입력       # SuperClaude 명령어 사용"
             log_info "  sc --help                        # SuperClaude 도움말 (별칭)"
             log_info "  python3 -m SuperClaude --help    # SuperClaude 도움말"
-            log_info "  python3 -m SuperClaude install   # 추가 구성요소 설치"
+            log_warning "주의: /sc 명령어는 Claude Code 재시작 후 사용 가능합니다!"
         fi
     else
         log_info "🔐 Claude CLI 수동 인증이 필요합니다!"
