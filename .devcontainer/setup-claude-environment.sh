@@ -578,7 +578,25 @@ install_superclaude() {
             # 여러 방법으로 자동 응답 시도
             local init_success=false
             
-            # 방법 1: expect를 사용한 자동화 (가장 안정적) - Quick Installation
+            # 방법 0: --yes 플래그를 사용한 자동 설치 (가장 간단)
+            if [ "$init_success" = false ]; then
+                log_info "SuperClaude install --yes 플래그로 자동 설치 시도..."
+                # Quick Installation (1번) 선택을 위한 입력 제공
+                if printf "1\n" | python3 -m SuperClaude install --yes >/dev/null 2>&1; then
+                    log_success "SuperClaude Framework 초기화 완료 (--yes 플래그)"
+                    init_success=true
+                else
+                    # 디버깅을 위해 에러 출력
+                    log_warning "첫 번째 시도 실패, 디버깅 모드로 재시도..."
+                    printf "1\n" | python3 -m SuperClaude install --yes --verbose 2>&1 | tee /tmp/superclaude_install.log || true
+                    # 로그 파일 확인
+                    if [ -f /tmp/superclaude_install.log ]; then
+                        log_info "설치 로그는 /tmp/superclaude_install.log에 저장됨"
+                    fi
+                fi
+            fi
+            
+            # 방법 1: expect를 사용한 자동화 (백업 방법) - Quick Installation
             if command -v expect &> /dev/null && [ "$init_success" = false ]; then
                 log_info "expect를 사용한 자동 초기화 (Quick Installation)..."
                 if expect -c "
@@ -641,6 +659,18 @@ install_superclaude() {
                 log_info "메뉴에서 1번 (Quick Installation) 선택 후 모든 프롬프트에 y 입력"
             else
                 log_success "SuperClaude Framework 설치 및 초기화 완료!"
+                
+                # 설치 확인
+                if [ -f ~/.claude/COMMANDS.md ] && [ -f ~/.claude/RULES.md ]; then
+                    log_success "✅ SuperClaude 컴포넌트 파일 확인 완료"
+                    log_info "  - COMMANDS.md: $(wc -l < ~/.claude/COMMANDS.md 2>/dev/null || echo '0') 줄"
+                    log_info "  - RULES.md: $(wc -l < ~/.claude/RULES.md 2>/dev/null || echo '0') 줄"
+                    log_info "  - 총 설치 파일: $(find ~/.claude -type f -name "*.md" | wc -l) 개"
+                else
+                    log_warning "⚠️  SuperClaude 파일이 ~/.claude에 설치되지 않았습니다"
+                    log_info "수동 설치 필요: python3 -m SuperClaude install"
+                fi
+                
                 log_info "⚠️  중요: Claude Code를 재시작해야 /sc 명령어가 활성화됩니다"
                 log_info "터미널에서 'claude' 명령으로 Claude Code를 재시작하세요"
             fi
