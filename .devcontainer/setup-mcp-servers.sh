@@ -55,7 +55,8 @@ check_claude_auth() {
         if echo "$auth_output" | grep -q "authentication isn't set up yet\|need to authenticate\|auth login"; then
             log_error "❌ Claude CLI가 인증되지 않았습니다."
             log_info "인증 상태 메시지: $auth_output"
-            log_info "먼저 다음 명령어로 인증하세요: claude auth login"
+            log_info "먼저 다음 명령어로 인증하세요: claude"
+            log_info "💡 claude 명령어 실행 시 브라우저가 열리고 인증을 진행합니다."
             return 1
         else
             log_success "✅ Claude CLI 인증 확인됨"
@@ -65,7 +66,8 @@ check_claude_auth() {
     else
         log_error "❌ Claude CLI 인증 상태 확인 실패"
         log_info "오류 메시지: $auth_output"
-        log_info "먼저 다음 명령어로 인증하세요: claude auth login"
+        log_info "먼저 다음 명령어로 인증하세요: claude"
+        log_info "💡 claude 명령어 실행 시 브라우저가 열리고 인증을 진행합니다."
         return 1
     fi
 }
