@@ -1,6 +1,6 @@
-# 🤖 Claude Code Ultimate AI Development Environment
+# 🤖 Claude Code DevContainer Environment
 
-> **세계 최고 수준의 AI 개발 협업 플랫폼** - Claude CLI, Claude Squad, SuperClaude Framework가 통합된 완전 자동화 DevContainer 환경
+> **AI 개발을 위한 완전 자동화 DevContainer** - Claude CLI, MCP 서버, AI 도구들이 3분 만에 자동 설치되는 개발 환경
 
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-brightgreen)](https://github.com/Choiyos/claude_code_scaffold)
 [![VS Code](https://img.shields.io/badge/VS%20Code-DevContainer-blue)](https://code.visualstudio.com/docs/devcontainers/containers)
@@ -9,12 +9,12 @@
 
 ## 🌟 **핵심 특징**
 
-- **🎯 원클릭 설정**: Git clone → VS Code 열기 → 3분 완료
-- **🤖 3대 AI 도구**: Claude CLI + Claude Squad + SuperClaude Framework
-- **⚡ 완전 자동화**: MCP 서버 5개 자동 설치 및 설정
-- **🌍 크로스 플랫폼**: Windows, macOS, Linux 완전 지원
-- **🔗 호스트 연동**: 기존 프로젝트 폴더 직접 접근 가능
-- **📊 모니터링**: Grafana + Prometheus 내장
+- **🎯 3분 설정**: Git clone → VS Code 열기 → 자동 설치 완료
+- **🤖 AI 도구 완비**: Claude CLI + 5개 MCP 서버 + Claude Squad + SuperClaude Framework
+- **⚡ 완전 자동화**: 모든 설치 및 설정이 자동으로 처리
+- **🌍 크로스 플랫폼**: Windows, macOS, Linux 동일한 경험
+- **🔗 호스트 연동**: 기존 프로젝트와 바로 연동 가능
+- **📊 개발 도구**: PostgreSQL, Redis, Grafana 모니터링 포함
 
 ---
 
