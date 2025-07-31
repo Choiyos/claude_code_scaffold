@@ -45,14 +45,12 @@ install_claude_code() {
     log_info "Node.js 버전: $(node --version)"
     log_info "npm 버전: $(npm --version)"
     
-    # PATH 환경변수에 npm global bin 추가
-    local npm_global_bin=$(npm config get prefix)/bin
-    if [[ ":$PATH:" != *":$npm_global_bin:"* ]]; then
-        export PATH="$npm_global_bin:$PATH"
-        echo "export PATH=\"$npm_global_bin:\$PATH\"" >> ~/.zshrc
-        echo "export PATH=\"$npm_global_bin:\$PATH\"" >> ~/.bashrc
-        log_info "NPM global bin을 PATH에 추가했습니다: $npm_global_bin"
-    fi
+    # npm 글로벌 prefix를 사용자 디렉토리로 변경 (권한 문제 해결)
+    npm config set prefix ~/.npm-global
+    export PATH=~/.npm-global/bin:$PATH
+    echo "export PATH=~/.npm-global/bin:\$PATH" >> ~/.zshrc
+    echo "export PATH=~/.npm-global/bin:\$PATH" >> ~/.bashrc
+    log_info "npm 글로벌 prefix를 사용자 디렉토리로 설정: ~/.npm-global"
     
     # Claude CLI가 이미 설치되어 있는지 확인
     if command -v claude &> /dev/null; then
@@ -66,7 +64,7 @@ install_claude_code() {
         log_success "Claude Code CLI 설치 완료"
         
         # PATH 새로 로드
-        export PATH="$npm_global_bin:$PATH"
+        export PATH=~/.npm-global/bin:$PATH
         
         # 설치 확인
         if command -v claude &> /dev/null; then
@@ -159,14 +157,17 @@ setup_claude_config() {
 setup_python_env() {
     log_info "Python 개발환경 설정 중..."
     
+    # PATH에 ~/.local/bin 추가 (Python 패키지용)
+    export PATH="$HOME/.local/bin:$PATH"
+    
     # Python 3.11이 설치되어 있는지 확인
     if ! command -v python3 &> /dev/null; then
         log_error "Python3가 설치되지 않았습니다. DevContainer features에서 설치될 예정입니다."
         return 1
     fi
     
-    # 기본 Python 패키지 설치
-    python3 -m pip install --user --upgrade pip setuptools wheel
+    # 기본 Python 패키지 설치 (경고 없이)
+    python3 -m pip install --user --upgrade pip setuptools wheel --no-warn-script-location
     log_success "Python 기본 패키지 설치 완료"
 }
 
@@ -253,7 +254,7 @@ setup_zsh_config() {
     cat >> ~/.zshrc << 'EOF'
 
 # Claude Code 개발환경 설정
-export PATH="$HOME/.local/bin:$PATH"
+export PATH="$HOME/.local/bin:$HOME/.npm-global/bin:$PATH"
 export PYTHONPATH="/workspace:$PYTHONPATH"
 
 # Volta 환경변수 설정
