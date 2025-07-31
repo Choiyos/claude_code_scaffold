@@ -86,5 +86,4 @@ RUN chown -R developer:developer /workspace
 USER developer
 WORKDIR /workspace
 
-# 컨테이너 시작시 zsh 사용
-CMD ["/bin/zsh"]
+# DevContainer에서는 CMD 불필요 (VS Code가 관리)

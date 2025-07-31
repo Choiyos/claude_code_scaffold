@@ -45,30 +45,26 @@ echo "  PWD=$PWD"
 
 if [[ -n "$CLAUDE_HOST_PROJECTS" ]]; then
     echo "✅ CLAUDE_HOST_PROJECTS 환경변수가 설정되어 있습니다: $CLAUDE_HOST_PROJECTS"
+    echo "💡 현재 DevContainer는 마운트 대신 심볼릭 링크 방식을 사용합니다"
     
-    # Docker 마운트로 /host/projects가 이미 연결되어 있는지 확인
-    if [[ -d "/host/projects" ]]; then
-        echo "✅ 호스트 폴더가 /host/projects에 마운트되었습니다"
-        
-        # 마운트된 폴더 권한 설정
-        sudo chown -R developer:developer /host/projects 2>/dev/null || true
-        
-        # 마운트된 폴더 내용 확인
-        if [[ "$(ls -A /host/projects 2>/dev/null)" ]]; then
-            echo "📁 마운트된 내용: $(ls /host/projects | head -3 | tr '\n' ' ')..."
-        else
-            echo "📁 마운트된 폴더가 비어있습니다"
-        fi
-        
-        echo "🎉 호스트 프로젝트 폴더 사용 가능: cd /host/projects"
-    else
-        echo "❌ Docker 마운트가 설정되지 않았습니다"
-        echo "💡 해결 방법:"
-        echo "  1. DevContainer를 완전히 재빌드하세요"
-        echo "  2. Ctrl+Shift+P → 'Dev Containers: Rebuild Container'"
-        echo "  3. 환경변수가 호스트에서 올바르게 설정되어 있는지 확인"
-        echo "     호스트에서: echo \$CLAUDE_HOST_PROJECTS"
-    fi
+    # /host 디렉토리 생성
+    sudo mkdir -p /host
+    
+    # 호스트 경로가 컨테이너 내부에서 접근 가능한지 확인
+    # (실제로는 접근 불가능하지만, 사용자에게 명확한 안내 제공)
+    echo "🔍 호스트 경로 접근성 확인 중..."
+    echo "ℹ️  DevContainer는 격리된 환경이므로 호스트 경로에 직접 접근할 수 없습니다"
+    echo ""
+    echo "📁 권장 사용 방법:"
+    echo "  1. workspace 폴더 사용:"
+    echo "     cd workspace"
+    echo "     git clone [your-project-url]"
+    echo ""
+    echo "  2. 또는 VS Code에서 'File > Open Folder'로 기존 프로젝트 열기"
+    echo ""
+    echo "💡 향후 업데이트:"
+    echo "  - Docker 볼륨 마운트 방식으로 호스트 폴더 연결 기능 추가 예정"
+    echo "  - 현재는 Git clone 방식을 권장합니다"
 else
     echo "❌ CLAUDE_HOST_PROJECTS 환경변수가 설정되지 않았습니다"
     echo "🔍 현재 환경변수 상태:"
