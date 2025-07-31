@@ -37,26 +37,23 @@ add_mcp_server() {
     echo ""
     echo "📦 추가 중: $server_name"
     
-    # 먼저 npm으로 전역 설치 시도
+    # npm으로 전역 설치
     echo "   1단계: npm 전역 설치..."
     if npm install -g "$package_name" 2>/dev/null; then
         echo "   ✅ npm 설치 완료"
         
-        # 설치된 경로 찾기
-        local install_path=$(npm root -g)/"$package_name"
-        
-        # MCP 서버 추가
+        # MCP 서버를 직접 claude mcp install로 추가
         echo "   2단계: MCP 서버 등록..."
-        if claude mcp add "$server_name" "node $install_path" 2>&1 | grep -v "OAuth\|sign in"; then
+        if claude mcp install "$package_name" 2>&1 | grep -v "OAuth\|sign in"; then
             echo "   ✅ $server_name 추가 성공!"
             return 0
         fi
     fi
     
-    # npx로 직접 실행 시도
-    echo "   대체 방법: npx 사용..."
-    if claude mcp add "$server_name" "npx $package_name" 2>&1 | grep -v "OAuth\|sign in"; then
-        echo "   ✅ $server_name 추가 성공! (npx)"
+    # 실패 시 직접 install 시도
+    echo "   대체 방법: 직접 설치..."
+    if claude mcp install "$package_name" 2>&1 | grep -v "OAuth\|sign in"; then
+        echo "   ✅ $server_name 추가 성공!"
         return 0
     fi
     
@@ -70,7 +67,6 @@ declare -a servers=(
     "context7|@upstash/context7-mcp"
     "magic|@21st-dev/magic"
     "playwright-automation|@executeautomation/playwright-mcp-server"
-    "playwright|@playwright/mcp"
 )
 
 # 추가 실행

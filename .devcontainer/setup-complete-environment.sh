@@ -77,13 +77,13 @@ else
     echo "💡 지금은 workspace 폴더를 사용하세요: cd workspace"
 fi
 
-# 디버깅 스크립트 실행
+# 조건부 마운트 상태 확인
 echo ""
-echo "🔍 마운트 상태 디버깅 정보:"
-if [[ -f ".devcontainer/debug-mount.sh" ]]; then
-    bash .devcontainer/debug-mount.sh
+echo "🔍 마운트 상태 확인:"
+if [[ -f ".devcontainer/conditional-mount.sh" ]]; then
+    bash .devcontainer/conditional-mount.sh
 else
-    echo "⚠️  디버깅 스크립트를 찾을 수 없습니다"
+    echo "⚠️  조건부 마운트 스크립트를 찾을 수 없습니다"
 fi
 
 echo ""

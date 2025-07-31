@@ -4,8 +4,15 @@
     "dockerfile": "Dockerfile",
     "context": ".."
   },
-  "mounts": [],
-  "postCreateCommand": "bash .devcontainer/setup-complete-environment.sh",
+  "initializeCommand": "echo \"Checking CLAUDE_HOST_PROJECTS: ${CLAUDE_HOST_PROJECTS:-not_set}\"",
+  "mounts": [
+    {
+      "source": "${localEnv:CLAUDE_HOST_PROJECTS}",
+      "target": "/host/projects",
+      "type": "bind",
+      "consistency": "cached"
+    }
+  ],
   "features": {
     "ghcr.io/devcontainers/features/python:1": {
       "version": "3.11"

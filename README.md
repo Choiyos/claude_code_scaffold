@@ -89,10 +89,9 @@ claude auth login  # 브라우저에서 인증
 
 # MCP 서버 수동 설치
 claude mcp install @modelcontextprotocol/server-sequential-thinking
-claude mcp install @upstash/context7-mcp
+claude mcp install @upstash/context7-mcp  
 claude mcp install @21st-dev/magic
 claude mcp install @executeautomation/playwright-mcp-server
-claude mcp install @playwright/mcp
 
 # 설치 확인
 claude mcp list
@@ -121,12 +120,11 @@ docker-compose ps
 
 ### 🎯 **Claude CLI + MCP Servers**
 - **Claude Code CLI**: 최신 버전 자동 설치
-- **자동 MCP 서버 5개** (토큰 필요):
+- **자동 MCP 서버 4개** (토큰 필요):
   - `@modelcontextprotocol/server-sequential-thinking` - 복잡한 추론
   - `@upstash/context7-mcp` - 문서 컨텍스트
   - `@21st-dev/magic` - UI 컴포넌트 생성
   - `@executeautomation/playwright-mcp-server` - 브라우저 자동화
-  - `@playwright/mcp` - 공식 Playwright 지원
 
 ### 🚀 **SuperClaude Framework**
 - **고급 AI 자동화**: Python 기반 프레임워크
