@@ -79,7 +79,26 @@ install_claude_code() {
     fi
 }
 
-# Claude CLI 자동 인증
+# Claude CLI 자동 인증 (향후 수동 인증용)
+setup_claude_auth_manual() {
+    log_info "Claude CLI 인증 안내..."
+    
+    # Claude CLI 인증 상태 확인
+    if claude auth status &>/dev/null; then
+        log_success "Claude CLI가 이미 인증되어 있습니다."
+        return 0
+    fi
+    
+    log_info "🔐 Claude CLI 인증이 필요합니다."
+    log_info "💡 DevContainer 시작 후 터미널에서 다음 명령어를 실행하세요:"
+    log_info "    claude auth login"
+    log_info ""
+    log_info "브라우저가 열리면 Claude 계정으로 로그인하고 인증을 완료하세요."
+    
+    return 1  # 수동 인증 필요함을 알림
+}
+
+# Claude CLI 환경변수 기반 인증 시도
 setup_claude_auth() {
     log_info "Claude CLI 인증 설정 중..."
     
@@ -89,19 +108,24 @@ setup_claude_auth() {
         return 0
     fi
     
-    log_info "🔐 Claude CLI 인증이 필요합니다. 브라우저가 자동으로 열립니다..."
-    log_info "💡 브라우저에서 Claude 계정으로 로그인해주세요."
-    log_info "⏳ 인증 완료까지 최대 2분 대기합니다..."
-    
-    # 백그라운드에서 claude auth login 실행
-    if timeout 120 claude auth login; then
-        log_success "✅ Claude CLI 인증 완료!"
-        return 0
-    else
-        log_warning "⚠️  Claude CLI 인증이 완료되지 않았습니다."
-        log_info "수동으로 인증하려면: claude auth login"
-        return 1
+    # ANTHROPIC_API_KEY 환경변수 확인
+    if [ -n "$ANTHROPIC_API_KEY" ]; then
+        log_info "ANTHROPIC_API_KEY 환경변수를 사용하여 인증 시도 중..."
+        # API 키가 있으면 환경변수로 인증 시도
+        export ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY"
+        if claude auth status &>/dev/null; then
+            log_success "✅ API 키를 통한 Claude CLI 인증 완료!"
+            return 0
+        fi
     fi
+    
+    log_info "🔐 Claude CLI 수동 인증이 필요합니다."
+    log_info "💡 DevContainer 시작 후 터미널에서 다음 명령어를 실행하세요:"
+    log_info "    claude auth login"
+    log_info ""
+    log_info "브라우저가 열리면 Claude 계정으로 로그인하고 인증을 완료하세요."
+    
+    return 1  # 수동 인증 필요함을 알림
 }
 
 # MCP 서버 설치 (Claude CLI installer 사용)
@@ -115,11 +139,16 @@ install_mcp_servers() {
     fi
     
     # Claude CLI 인증 확인 및 자동 설정
-    if ! claude auth status &>/dev/null; then
-        log_warning "Claude CLI가 인증되지 않았습니다. 인증을 진행합니다..."
-        if ! setup_claude_auth; then
-            log_error "Claude CLI 인증 실패. MCP 서버 설치를 건너뜁니다."
-            return 1
+    local auth_success=false
+    if claude auth status &>/dev/null; then
+        auth_success=true
+        log_success "Claude CLI가 이미 인증되어 있습니다."
+    else
+        log_warning "Claude CLI가 인증되지 않았습니다."
+        if setup_claude_auth; then
+            auth_success=true
+        else
+            log_warning "Claude CLI 인증 실패. npm으로 MCP 패키지만 설치합니다."
         fi
     fi
     
@@ -132,13 +161,17 @@ install_mcp_servers() {
     )
     
     for server in "${servers[@]}"; do
-        log_info "Claude MCP 추가 중: $server"
-        if claude mcp add "$server"; then
-            log_success "$server MCP 추가 완료"
+        if [ "$auth_success" = true ]; then
+            log_info "Claude MCP 추가 중: $server"
+            if claude mcp add "$server"; then
+                log_success "$server MCP 추가 완료"
+            else
+                log_warning "$server MCP 추가 실패 - npm으로 패키지 설치"
+                log_info "npm으로 패키지 설치: $server"
+                npm install -g "$server" 2>/dev/null || true
+            fi
         else
-            log_warning "$server MCP 추가 실패 - npm으로 패키지 설치"
-            
-            # 실패 시 npm으로 패키지 설치
+            # 인증 실패 시 npm으로만 설치
             log_info "npm으로 패키지 설치: $server"
             npm install -g "$server" 2>/dev/null || true
         fi
@@ -405,9 +438,8 @@ main() {
     setup_claude_config
     install_claude_code
     
-    # Claude CLI 설치 성공 시 자동 인증 및 MCP 설치 진행
+    # Claude CLI 설치 성공 시 MCP 설치 진행 (인증은 MCP 설치 함수 내에서 처리)
     if command -v claude &> /dev/null; then
-        setup_claude_auth
         install_mcp_servers
     else
         log_warning "Claude CLI가 설치되지 않았으므로 MCP 서버 설치를 건너뜁니다."

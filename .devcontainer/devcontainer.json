@@ -33,7 +33,7 @@
   "customizations": {
     "vscode": {
       "extensions": [
-        "ms-python.python",
+        "ms-python.python", 
         "bradlc.vscode-tailwindcss",
         "ms-vscode.vscode-typescript-next"
       ],
@@ -42,6 +42,9 @@
         "terminal.integrated.defaultProfile.linux": "zsh"
       }
     }
+  },
+  "remoteEnv": {
+    "ANTHROPIC_API_KEY": "${localEnv:ANTHROPIC_API_KEY}"
   },
   "remoteUser": "developer"
 }
