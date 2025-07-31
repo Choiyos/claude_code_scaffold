@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y \
     unzip \
     zip \
     tmux \
+    expect \
     && rm -rf /var/lib/apt/lists/*
 
 # GitHub CLI 설치
