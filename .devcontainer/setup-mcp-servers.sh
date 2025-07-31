@@ -81,12 +81,12 @@ check_claude_auth() {
 add_mcp_servers() {
     log_info "🔧 MCP 서버 등록 시작..."
     
-    # MCP 서버 배열 (더 호환성 있는 방식)
-    local server_packages=(
-        "@modelcontextprotocol/server-sequential-thinking"
-        "@upstash/context7-mcp"
-        "@21st-dev/magic"
-        "@playwright/mcp"
+    # MCP 서버 배열 (Claude CLI 이름 규칙에 맞게 수정)
+    local server_names=(
+        "sequential-thinking"
+        "context7-mcp"
+        "magic"
+        "playwright-mcp"
     )
     
     local server_commands=(
@@ -97,12 +97,12 @@ add_mcp_servers() {
     )
     
     local success_count=0
-    local total_count=${#server_packages[@]}
+    local total_count=${#server_names[@]}
     
     log_info "📦 등록할 MCP 서버 목록 ($total_count개):"
     i=0
     while [ $i -lt $total_count ]; do
-        log_info "  - ${server_packages[$i]} → ${server_commands[$i]}"
+        log_info "  - ${server_names[$i]} → ${server_commands[$i]}"
         i=$((i + 1))
     done
     log_info ""
@@ -123,35 +123,35 @@ add_mcp_servers() {
     # 서버 등록 루프
     i=0
     while [ $i -lt $total_count ]; do
-        local package="${server_packages[$i]}"
+        local server_name="${server_names[$i]}"
         local command="${server_commands[$i]}"
         local current=$((i + 1))
         
-        log_info "[$current/$total_count] 🔄 MCP 서버 등록 중: $package"
-        log_info "실행 명령어: claude mcp add \"$package\" \"$command\""
+        log_info "[$current/$total_count] 🔄 MCP 서버 등록 중: $server_name"
+        log_info "실행 명령어: claude mcp add \"$server_name\" \"$command\""
         
         # 명령어 실행 및 상세 로그
         local output
         local exit_code
         
         log_info "⏳ 명령어 실행 중... (최대 30초 대기)"
-        if output=$(timeout 30 claude mcp add "$package" "$command" 2>&1); then
+        if output=$(timeout 30 claude mcp add "$server_name" "$command" 2>&1); then
             exit_code=0
         else
             exit_code=$?
         fi
         
         if [ $exit_code -eq 0 ]; then
-            log_success "✅ [$current/$total_count] $package 등록 완료"
+            log_success "✅ [$current/$total_count] $server_name 등록 완료"
             log_info "출력: $output"
             ((success_count++))
         elif [ $exit_code -eq 124 ]; then
-            log_error "⏰ [$current/$total_count] $package 등록 타임아웃 (30초)"
+            log_error "⏰ [$current/$total_count] $server_name 등록 타임아웃 (30초)"
             log_info "출력: $output"
         else
-            log_warning "⚠️  [$current/$total_count] $package 등록 실패 (exit code: $exit_code)"
+            log_warning "⚠️  [$current/$total_count] $server_name 등록 실패 (exit code: $exit_code)"
             log_info "오류 출력: $output"
-            log_info "💡 수동으로 등록하려면: claude mcp add \"$package\" \"$command\""
+            log_info "💡 수동으로 등록하려면: claude mcp add \"$server_name\" \"$command\""
         fi
         
         log_info ""
