@@ -2,23 +2,6 @@
   "name": "Claude Code Development Environment (Local Override)",
   
   "mounts": [
-    "source=/Users/yourusername/dev,target=/host/projects,type=bind,consistency=cached",
-    "source=/Users/yourusername/Documents,target=/host/Documents,type=bind,consistency=cached",
-    "source=/Users/yourusername/Downloads,target=/host/Downloads,type=bind,consistency=cached"
-  ],
-  
-  "remoteEnv": {
-    "MY_CUSTOM_VAR": "custom_value"
-  },
-  
-  "customizations": {
-    "vscode": {
-      "extensions": [
-        "your-favorite-extension"
-      ],
-      "settings": {
-        "editor.fontSize": 14
-      }
-    }
-  }
+    "source=/Users/yourusername/Documents/git,target=/host/projects,type=bind,consistency=cached"
+  ]
 }

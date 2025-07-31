@@ -43,6 +43,9 @@
       }
     }
   },
+  "mounts": [
+    "source=${localEnv:CLAUDE_HOST_PROJECTS:-${localEnv:HOME}},target=/host/projects,type=bind,consistency=cached"
+  ],
   "remoteEnv": {
     "ANTHROPIC_API_KEY": "${localEnv:ANTHROPIC_API_KEY}",
     "CLAUDE_CODE_OAUTH_TOKEN": "${localEnv:CLAUDE_CODE_OAUTH_TOKEN}"

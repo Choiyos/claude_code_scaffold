@@ -33,6 +33,21 @@ else
     echo "⚠️  Claude CLI를 찾을 수 없습니다. MCP 서버 설치를 건너뜁니다."
 fi
 
+# 마운트 폴더 검증 및 안내
+echo "🔧 마지막 단계: 호스트 폴더 마운트 확인 중..."
+if [[ -d "/host/projects" ]]; then
+    if [[ "$(ls -A /host/projects 2>/dev/null)" ]]; then
+        echo "✅ 호스트 프로젝트 폴더 연결됨: /host/projects"
+        echo "📁 마운트된 내용: $(ls /host/projects | head -3 | tr '\n' ' ')..."
+    else
+        echo "ℹ️  호스트 프로젝트 폴더는 연결되었지만 비어있습니다"
+        echo "💡 CLAUDE_HOST_PROJECTS 환경변수로 원하는 폴더를 설정하세요"
+    fi
+else
+    echo "ℹ️  호스트 프로젝트 폴더가 마운트되지 않았습니다"
+    echo "💡 workspace 폴더를 사용하거나 환경변수를 설정하세요"
+fi
+
 echo ""
 echo "🎉 Claude Code 완전 통합 환경 설정 완료!"
 echo ""
@@ -41,4 +56,8 @@ echo "  - Claude CLI: claude --help"
 echo "  - MCP 서버: claude mcp list"
 echo "  - 인프라 서비스: docker-compose ps"
 echo "  - Grafana: http://localhost:3010"
+if [[ -d "/host/projects" ]]; then
+    echo "  - 호스트 프로젝트: cd /host/projects"
+fi
+echo "  - 워크스페이스: cd workspace"
 echo ""

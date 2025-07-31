@@ -39,16 +39,22 @@
 
 ### 1️⃣ **환경변수 설정 (선택사항)**
 
-Claude CLI OAuth 토큰을 설정하면 자동 로그인이 가능합니다:
+Claude CLI 토큰과 호스트 폴더 경로를 설정하면 완전 자동화가 가능합니다:
 
 **Windows (PowerShell):**
 ```powershell
+# Claude CLI 토큰 (자동 로그인)
 [Environment]::SetEnvironmentVariable("CLAUDE_CODE_OAUTH_TOKEN", "your-token-here", "User")
+
+# 호스트 프로젝트 폴더 (선택사항)
+[Environment]::SetEnvironmentVariable("CLAUDE_HOST_PROJECTS", "C:\dev", "User")
 ```
 
 **macOS/Linux (Terminal):**
 ```bash
+# ~/.zshrc 또는 ~/.bashrc에 추가
 echo 'export CLAUDE_CODE_OAUTH_TOKEN="your-token-here"' >> ~/.zshrc
+echo 'export CLAUDE_HOST_PROJECTS="/Users/yosebchoi/Documents/git"' >> ~/.zshrc
 source ~/.zshrc
 ```
 
@@ -120,9 +126,32 @@ docker-compose ps
 
 ## 📁 **프로젝트 개발 방법**
 
-### 🎯 **방법 1: workspace 폴더 사용 (권장)**
+### 🎯 **방법 1: 환경변수로 호스트 폴더 연결 (권장)**
 
-DevContainer 내부의 `workspace` 폴더에 개발하려는 프로젝트를 클론해서 사용하세요:
+환경변수를 설정하면 **Git 변경점 없이** 호스트 폴더를 자동으로 연결할 수 있습니다:
+
+```bash
+# 환경변수 설정 후 DevContainer 빌드
+# → 자동으로 /host/projects에 연결됨
+
+# DevContainer 내부에서
+cd /host/projects              # 호스트 폴더에 직접 접근
+cd your-existing-project       # 기존 프로젝트로 이동
+
+# AI 도구들로 즉시 개발 시작
+claude --help
+cs new session
+sc --help
+```
+
+**장점**:
+- ✅ **Git 안전**: 개인 설정이 버전 관리에 포함되지 않음
+- ✅ **자동 연결**: DevContainer 빌드시 자동으로 마운트
+- ✅ **기존 프로젝트**: 호스트의 기존 프로젝트를 그대로 사용
+
+### 🔧 **방법 2: workspace 폴더 사용**
+
+별도 설정 없이 간단하게 사용하는 방법:
 
 ```bash
 # DevContainer 내부에서
@@ -138,12 +167,7 @@ cs new session
 sc --help
 ```
 
-**장점**:
-- 별도 설정 불필요
-- 모든 AI 도구 즉시 사용 가능
-- 프로젝트별 독립적인 환경
-
-### 🔧 **방법 2: 호스트 폴더 마운트**
+### 🔧 **방법 3: 로컬 설정 파일 (고급)**
 
 기존 호스트 폴더를 DevContainer에 직접 연결하는 방법입니다. **개인용 설정 파일**을 사용해서 Git 변경점 없이 설정할 수 있습니다.
 
@@ -199,14 +223,30 @@ sc --help
 
 ### 🚨 **트러블슈팅**
 
+#### **환경변수 설정이 적용되지 않을 때**
+```bash
+# 1. 환경변수 설정 확인 (호스트에서)
+echo $CLAUDE_HOST_PROJECTS     # 환경변수 값 확인
+
+# 2. 환경변수 재설정
+export CLAUDE_HOST_PROJECTS="/Users/yosebchoi/Documents/git"
+echo 'export CLAUDE_HOST_PROJECTS="/Users/yosebchoi/Documents/git"' >> ~/.zshrc
+
+# 3. DevContainer 완전 재빌드 (필수!)
+# Ctrl+Shift+P → "Dev Containers: Rebuild Container"
+```
+
 #### **"No such file or directory" 오류**
 ```bash
-# 원인: 존재하지 않는 폴더를 마운트하려고 시도
-# 해결: 실제 존재하는 폴더 경로로 수정
+# 원인: 환경변수 경로가 존재하지 않음
+# 해결: 폴더 생성 후 재빌드
 
-# 폴더 존재 확인 (호스트에서)
-ls -la /Users/yosebchoi/dev     # 폴더가 있는지 확인
-mkdir -p /Users/yosebchoi/dev   # 없으면 생성
+# 폴더 존재 확인 및 생성 (호스트에서)
+ls -la /Users/yosebchoi/Documents/git     # 확인
+mkdir -p /Users/yosebchoi/Documents/git   # 생성
+
+# DevContainer 재빌드
+# Ctrl+Shift+P → "Dev Containers: Rebuild Container"
 ```
 
 #### **DevContainer 빌드 실패**
