@@ -1,20 +1,20 @@
-# 🤖 Claude Code Ultimate AI Development Environment
+# 🤖 Claude Code DevContainer Environment
 
-> **World's Best AI Development Collaboration Platform** - Complete automation DevContainer environment integrating Claude CLI, Claude Squad, and SuperClaude Framework
+> **AI Development Automation DevContainer** - Complete development environment with Claude CLI, MCP servers, and AI tools installed automatically in 3 minutes
 
-[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-brightgreen)](https://github.com/Choiyos/claude_code_scaffold)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-brightgreen)](https://github.com/YOUR_USERNAME/claude_code_scaffold)
 [![VS Code](https://img.shields.io/badge/VS%20Code-DevContainer-blue)](https://code.visualstudio.com/docs/devcontainers/containers)
 [![Docker](https://img.shields.io/badge/Docker-Required-blue)](https://www.docker.com/)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
 ## 🌟 **Key Features**
 
-- **🎯 One-Click Setup**: Git clone → Open VS Code → 3 minutes complete
-- **🤖 3 AI Tools Integration**: Claude CLI + Claude Squad + SuperClaude Framework
-- **⚡ Full Automation**: 5 MCP servers auto-install and configuration
-- **🌍 Cross-Platform**: Complete support for Windows, macOS, Linux
-- **🔗 Host Integration**: Direct access to existing project folders
-- **📊 Built-in Monitoring**: Grafana + Prometheus included
+- **🎯 3-Minute Setup**: Git clone → Open VS Code → Auto-installation complete
+- **🤖 Complete AI Tools**: Claude CLI + 5 MCP servers + Claude Squad + SuperClaude Framework
+- **⚡ Full Automation**: All installation and configuration handled automatically
+- **🌍 Cross-Platform**: Identical experience on Windows, macOS, Linux
+- **🔗 Host Folder Integration**: Direct connection to existing projects
+- **📊 Development Tools**: PostgreSQL, Redis, Grafana monitoring included
 
 ---
 
@@ -39,25 +39,29 @@
 
 ### 1️⃣ **Environment Variables Setup (Optional)**
 
-Using OAuth token enables full automation:
+Setting up Claude CLI token and host folder path enables complete automation:
 
 **Windows (PowerShell):**
 ```powershell
-# Add to system environment variables
+# Claude CLI token (auto-login)
 [Environment]::SetEnvironmentVariable("CLAUDE_CODE_OAUTH_TOKEN", "your-token-here", "User")
+
+# Host project folder (optional)
+[Environment]::SetEnvironmentVariable("CLAUDE_HOST_PROJECTS", "C:\dev", "User")
 ```
 
 **macOS/Linux (Terminal):**
 ```bash
 # Add to ~/.zshrc or ~/.bashrc
 echo 'export CLAUDE_CODE_OAUTH_TOKEN="your-token-here"' >> ~/.zshrc
+echo 'export CLAUDE_HOST_PROJECTS="$HOME/dev"' >> ~/.zshrc
 source ~/.zshrc
 ```
 
 ### 2️⃣ **Clone Project**
 
 ```bash
-git clone https://github.com/Choiyos/claude_code_scaffold.git
+git clone https://github.com/YOUR_USERNAME/claude_code_scaffold.git
 cd claude_code_scaffold
 ```
 
@@ -120,93 +124,99 @@ docker-compose ps
 
 ---
 
-## 📁 **Host Folder Access Setup**
+## 📁 **Project Development Methods**
 
-To use existing projects directly, you need to mount host folders to DevContainer.
+### 🎯 **Method 1: Environment Variable Host Folder Connection (Recommended)**
 
-### 🔧 **Setup Method**
-
-Add `mounts` section to `.devcontainer/devcontainer.json`:
-
-#### 🪟 **Windows Users**
-```json
-{
-  "mounts": [
-    "source=${localEnv:USERPROFILE}\\Documents,target=/host/Documents,type=bind,consistency=cached",
-    "source=${localEnv:USERPROFILE}\\Downloads,target=/host/Downloads,type=bind,consistency=cached",
-    "source=${localEnv:USERPROFILE}\\Desktop,target=/host/Desktop,type=bind,consistency=cached",
-    "source=C:\\dev,target=/host/dev,type=bind,consistency=cached"
-  ]
-}
-```
-
-#### 🍎 **macOS Users**
-```json
-{
-  "mounts": [
-    "source=${localEnv:HOME}/Documents,target=/host/Documents,type=bind,consistency=cached",
-    "source=${localEnv:HOME}/Downloads,target=/host/Downloads,type=bind,consistency=cached",
-    "source=${localEnv:HOME}/Desktop,target=/host/Desktop,type=bind,consistency=cached",
-    "source=${localEnv:HOME}/dev,target=/host/dev,type=bind,consistency=cached"
-  ]
-}
-```
-
-#### 🐧 **Linux Users**
-```json
-{
-  "mounts": [
-    "source=${localEnv:HOME}/Documents,target=/host/Documents,type=bind,consistency=cached",
-    "source=${localEnv:HOME}/Downloads,target=/host/Downloads,type=bind,consistency=cached",
-    "source=${localEnv:HOME}/Desktop,target=/host/Desktop,type=bind,consistency=cached",
-    "source=${localEnv:HOME}/dev,target=/host/dev,type=bind,consistency=cached"
-  ]
-}
-```
-
-### 📝 **Complete devcontainer.json Example**
-
-```json
-{
-  "name": "Claude Code Development Environment",
-  "build": {
-    "dockerfile": "Dockerfile",
-    "context": ".."
-  },
-  "postCreateCommand": "bash .devcontainer/setup-complete-environment.sh",
-  "mounts": [
-    // Add OS-specific mounts configuration here
-  ],
-  "forwardPorts": [3010, 9090, 5432, 6379],
-  "remoteUser": "developer"
-}
-```
-
-### 🚀 **Usage**
-
-After setup and DevContainer rebuild:
+Setting environment variables allows **automatic host folder connection without Git changes**:
 
 ```bash
-# Check mounted folders
-ls /host/
+# After setting environment variables → DevContainer build
+# → Automatically connects to /host/projects
 
-# Navigate to existing project
-cd /host/dev/my-existing-project
+# Inside DevContainer
+cd /host/projects              # Direct access to host folder
+cd your-existing-project       # Navigate to existing project
 
-# Open in VS Code
-code /host/dev/my-existing-project
-
-# Use AI tools immediately
+# Start AI development immediately
 claude --help
 cs new session
 sc --help
 ```
 
-### ⚠️ **Important Notes**
+**Advantages**:
+- ✅ **Git Safe**: Personal settings not included in version control
+- ✅ **Auto Connect**: Automatically mounts during DevContainer build
+- ✅ **Existing Projects**: Use host's existing projects as-is
 
-- DevContainer rebuild required: `Ctrl+Shift+P` → "Dev Containers: Rebuild Container"
-- Non-existing folders will be auto-created
-- Windows paths require backslash (`\`) escaping
+### 🔧 **Method 2: Workspace Folder Usage**
+
+Simple method without additional setup:
+
+```bash
+# Inside DevContainer
+cd workspace
+
+# Clone development project
+git clone https://github.com/your-username/your-project.git
+cd your-project
+
+# Start AI development immediately
+claude --help
+cs new session
+sc --help
+```
+
+---
+
+### 🚨 **Troubleshooting**
+
+#### **Environment Variable Not Applied**
+```bash
+# 1. Check environment variable (on host)
+echo $CLAUDE_HOST_PROJECTS     # Check variable value
+
+# 2. Reset environment variable
+export CLAUDE_HOST_PROJECTS="$HOME/dev"
+echo 'export CLAUDE_HOST_PROJECTS="$HOME/dev"' >> ~/.zshrc
+
+# 3. DevContainer complete rebuild (required!)
+# Ctrl+Shift+P → "Dev Containers: Rebuild Container"
+```
+
+#### **"No such file or directory" Error**
+```bash
+# Cause: Environment variable path doesn't exist
+# Solution: Create folder then rebuild
+
+# Check and create folder (on host)
+ls -la $HOME/dev           # Check
+mkdir -p $HOME/dev         # Create
+
+# DevContainer rebuild
+# Ctrl+Shift+P → "Dev Containers: Rebuild Container"
+```
+
+#### **DevContainer Build Failure**
+```bash
+# 1. Check environment variable path for special characters
+# Wrong: /Users/홍길동/dev (Korean path)
+# Correct: /Users/user/dev
+
+# 2. Check Docker Desktop status
+docker --version
+
+# 3. DevContainer complete rebuild
+# Ctrl+Shift+P → "Dev Containers: Rebuild Container Without Cache"
+```
+
+#### **VS Code Connection Failure**
+```bash
+# 1. Restart Docker Desktop
+# 2. Restart VS Code
+# 3. Remove environment variable and test with default settings
+unset CLAUDE_HOST_PROJECTS
+```
 
 ---
 

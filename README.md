@@ -54,7 +54,7 @@ Claude CLI 토큰과 호스트 폴더 경로를 설정하면 완전 자동화가
 ```bash
 # ~/.zshrc 또는 ~/.bashrc에 추가
 echo 'export CLAUDE_CODE_OAUTH_TOKEN="your-token-here"' >> ~/.zshrc
-echo 'export CLAUDE_HOST_PROJECTS="/Users/yosebchoi/Documents/git"' >> ~/.zshrc
+echo 'export CLAUDE_HOST_PROJECTS="$HOME/dev"' >> ~/.zshrc
 source ~/.zshrc
 ```
 
@@ -167,59 +167,8 @@ cs new session
 sc --help
 ```
 
-### 🔧 **방법 3: 로컬 설정 파일 (고급)**
 
-기존 호스트 폴더를 DevContainer에 직접 연결하는 방법입니다. **개인용 설정 파일**을 사용해서 Git 변경점 없이 설정할 수 있습니다.
-
-#### **📝 설정 방법**
-
-**1단계: 로컬 설정 파일 생성**
-```bash
-# 호스트 컴퓨터에서 (DevContainer 외부)
-cd claude_code_scaffold
-cp .devcontainer/devcontainer.local.example.json .devcontainer/devcontainer.local.json
-```
-
-**2단계: 개인 경로 설정**
-```json
-// .devcontainer/devcontainer.local.json 파일 편집
-{
-  "name": "Claude Code Development Environment (Local)",
-  "mounts": [
-    "source=/Users/yosebchoi/dev,target=/host/projects,type=bind,consistency=cached",
-    "source=/Users/yosebchoi/Documents,target=/host/Documents,type=bind,consistency=cached",
-    "source=/Users/yosebchoi/Downloads,target=/host/Downloads,type=bind,consistency=cached"
-  ]
-}
-```
-
-**3단계: DevContainer 빌드**
-```bash
-# VS Code에서
-# Ctrl+Shift+P → "Dev Containers: Rebuild Container"
-```
-
-#### **💡 설정 팁**
-- ✅ **Git 안전**: `.devcontainer/*.local.json` 파일은 Git에서 자동 제외
-- ✅ **경로 확인**: 실제 존재하는 폴더 경로만 사용하세요
-- ✅ **절대 경로**: `/Users/username/folder` 형태의 전체 경로 사용
-
-### 🚀 **사용 방법**
-
-설정 후 DevContainer에서:
-
-```bash
-# 마운트된 폴더 확인
-ls /host/               # projects, Documents, Downloads
-
-# 기존 프로젝트로 이동
-cd /host/projects/my-existing-project
-
-# AI 도구들로 개발 시작
-claude --help
-cs new session
-sc --help
-```
+---
 
 ### 🚨 **트러블슈팅**
 
@@ -229,8 +178,8 @@ sc --help
 echo $CLAUDE_HOST_PROJECTS     # 환경변수 값 확인
 
 # 2. 환경변수 재설정
-export CLAUDE_HOST_PROJECTS="/Users/yosebchoi/Documents/git"
-echo 'export CLAUDE_HOST_PROJECTS="/Users/yosebchoi/Documents/git"' >> ~/.zshrc
+export CLAUDE_HOST_PROJECTS="$HOME/dev"
+echo 'export CLAUDE_HOST_PROJECTS="$HOME/dev"' >> ~/.zshrc
 
 # 3. DevContainer 완전 재빌드 (필수!)
 # Ctrl+Shift+P → "Dev Containers: Rebuild Container"
@@ -242,8 +191,8 @@ echo 'export CLAUDE_HOST_PROJECTS="/Users/yosebchoi/Documents/git"' >> ~/.zshrc
 # 해결: 폴더 생성 후 재빌드
 
 # 폴더 존재 확인 및 생성 (호스트에서)
-ls -la /Users/yosebchoi/Documents/git     # 확인
-mkdir -p /Users/yosebchoi/Documents/git   # 생성
+ls -la $HOME/dev           # 확인
+mkdir -p $HOME/dev         # 생성
 
 # DevContainer 재빌드
 # Ctrl+Shift+P → "Dev Containers: Rebuild Container"
@@ -251,12 +200,12 @@ mkdir -p /Users/yosebchoi/Documents/git   # 생성
 
 #### **DevContainer 빌드 실패**
 ```bash
-# 1. JSON 문법 확인
-cat .devcontainer/devcontainer.local.json | python -m json.tool
-
-# 2. 경로에 특수문자나 공백 확인
+# 1. 환경변수 경로에 특수문자나 공백 확인
 # 잘못된 예: /Users/홍길동/dev (한글 경로)
 # 올바른 예: /Users/user/dev
+
+# 2. Docker Desktop 실행 상태 확인
+docker --version
 
 # 3. DevContainer 완전 재빌드
 # Ctrl+Shift+P → "Dev Containers: Rebuild Container Without Cache"
@@ -264,12 +213,10 @@ cat .devcontainer/devcontainer.local.json | python -m json.tool
 
 #### **VS Code 연결 실패**
 ```bash
-# 1. Docker Desktop 실행 상태 확인
-docker --version
-
-# 2. 로컬 설정 파일 제거 후 재시도
-rm .devcontainer/devcontainer.local.json
-# 기본 DevContainer로 먼저 테스트
+# 1. Docker Desktop 재시작
+# 2. VS Code 재시작
+# 3. 환경변수 제거 후 기본 설정으로 테스트
+unset CLAUDE_HOST_PROJECTS
 ```
 
 ---

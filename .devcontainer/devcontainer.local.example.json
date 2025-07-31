@@ -1,4 +1,6 @@
 {
+  "_comment": "This is an example local override file. Copy to devcontainer.local.json and customize as needed. Note: Environment variables (CLAUDE_HOST_PROJECTS) are the recommended approach.",
+  
   "name": "Claude Code Development Environment (Local Override)",
   
   "mounts": [
