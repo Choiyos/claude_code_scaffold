@@ -29,15 +29,22 @@ WORKDIR /home/developer
 
 RUN sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
 
-# Volta 설치 (Node.js 버전 관리)
-RUN curl https://get.volta.sh | bash
+# 사용자를 root로 변경하여 시스템 설정 계속
+USER root
+
+# Node.js 18.x 설치 (직접 설치 방식)
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get install -y nodejs
+
+# 다시 developer 사용자로 변경
+USER developer
+
+# Volta 설치 (선택사항, Node.js 이미 설치됨)
+RUN curl https://get.volta.sh | bash || true
 
 # Volta 환경변수 설정
 ENV VOLTA_HOME="/home/developer/.volta"
 ENV PATH="$VOLTA_HOME/bin:$PATH"
-
-# Volta로 Node.js 18.20.8 설치
-RUN bash -c 'source ~/.volta/load.sh && volta install node@18.20.8 && volta install npm@latest'
 
 # 사용자를 root로 변경하여 시스템 설정 계속
 USER root
