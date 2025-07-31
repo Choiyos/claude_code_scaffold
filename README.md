@@ -120,11 +120,34 @@ docker-compose ps
 
 ---
 
-## 📁 **호스트 폴더 접근 설정**
+## 📁 **프로젝트 개발 방법**
 
-기존 프로젝트를 그대로 사용하려면 호스트 폴더를 DevContainer에 마운트해야 합니다.
+### 🎯 **방법 1: workspace 폴더 사용 (권장)**
 
-### 🔧 **설정 방법**
+DevContainer 내부의 `workspace` 폴더에 개발하려는 프로젝트를 클론해서 사용하세요:
+
+```bash
+# DevContainer 내부에서
+cd workspace
+
+# 개발하려는 프로젝트 클론
+git clone https://github.com/your-username/your-project.git
+cd your-project
+
+# AI 도구들로 즉시 개발 시작
+claude --help
+cs new session
+sc --help
+```
+
+**장점**:
+- 별도 설정 불필요
+- 모든 AI 도구 즉시 사용 가능
+- 프로젝트별 독립적인 환경
+
+### 🔧 **방법 2: 호스트 폴더 마운트**
+
+기존 호스트 폴더를 DevContainer에 직접 연결하려면 추가 설정이 필요합니다.
 
 `.devcontainer/devcontainer.json` 파일에 `mounts` 섹션을 추가하세요:
 
