@@ -83,15 +83,17 @@ install_claude_code() {
 setup_claude_auth_manual() {
     log_info "Claude CLI 인증 안내..."
     
-    # Claude CLI 인증 상태 확인
-    if claude auth status &>/dev/null; then
+    # Claude CLI 인증 상태 확인 (MCP 명령어로 간접 확인)
+    local mcp_output
+    if mcp_output=$(timeout 10 claude mcp list 2>&1); then
         log_success "Claude CLI가 이미 인증되어 있습니다."
         return 0
     fi
     
     log_info "🔐 Claude CLI 인증이 필요합니다."
     log_info "💡 DevContainer 시작 후 터미널에서 다음 명령어를 실행하세요:"
-    log_info "    claude auth login"
+    log_info "    claude"
+    log_info "    → 대화형 터미널이 시작되면서 브라우저로 인증 진행"
     log_info ""
     log_info "브라우저가 열리면 Claude 계정으로 로그인하고 인증을 완료하세요."
     
@@ -102,8 +104,9 @@ setup_claude_auth_manual() {
 setup_claude_auth() {
     log_info "Claude CLI 인증 설정 중..."
     
-    # Claude CLI 인증 상태 확인
-    if claude auth status &>/dev/null; then
+    # Claude CLI 인증 상태 확인 (MCP 명령어로 간접 확인)
+    local mcp_output
+    if mcp_output=$(timeout 10 claude mcp list 2>&1); then
         log_success "Claude CLI가 이미 인증되어 있습니다."
         return 0
     fi
@@ -113,7 +116,7 @@ setup_claude_auth() {
         log_info "ANTHROPIC_API_KEY 환경변수를 사용하여 인증 시도 중..."
         # API 키가 있으면 환경변수로 인증 시도
         export ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY"
-        if claude auth status &>/dev/null; then
+        if mcp_output=$(timeout 10 claude mcp list 2>&1); then
             log_success "✅ API 키를 통한 Claude CLI 인증 완료!"
             return 0
         fi
@@ -121,7 +124,8 @@ setup_claude_auth() {
     
     log_info "🔐 Claude CLI 수동 인증이 필요합니다."
     log_info "💡 DevContainer 시작 후 터미널에서 다음 명령어를 실행하세요:"
-    log_info "    claude auth login"
+    log_info "    claude"
+    log_info "    → 대화형 터미널이 시작되면서 브라우저로 인증 진행"
     log_info ""
     log_info "브라우저가 열리면 Claude 계정으로 로그인하고 인증을 완료하세요."
     
@@ -140,7 +144,8 @@ install_mcp_servers() {
     
     # Claude CLI 인증 확인 및 자동 설정
     local auth_success=false
-    if claude auth status &>/dev/null; then
+    local mcp_output
+    if mcp_output=$(timeout 10 claude mcp list 2>&1); then
         auth_success=true
         log_success "Claude CLI가 이미 인증되어 있습니다."
     else
@@ -453,7 +458,8 @@ main() {
     log_info ""
     
     # Claude CLI 인증 상태에 따른 메시지 표시
-    if command -v claude &> /dev/null && claude auth status &>/dev/null; then
+    local mcp_check_output
+    if command -v claude &> /dev/null && mcp_check_output=$(timeout 10 claude mcp list 2>&1); then
         log_success "✅ Claude CLI 인증 완료 - 바로 사용 가능합니다!"
         log_info ""
         log_info "다음 단계:"

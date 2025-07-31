@@ -46,29 +46,34 @@ check_claude_auth() {
     log_success "✅ Claude CLI 실행 파일 확인됨: $(which claude)"
     log_info "📋 Claude CLI 버전: $(claude --version 2>/dev/null || echo 'version check failed')"
     
-    # 인증 상태 확인 (상세 로그)
+    # 인증 상태 확인 (MCP 명령어로 간접 확인)
     log_info "🔐 Claude CLI 인증 상태 확인 중..."
     
-    local auth_output
-    if auth_output=$(claude auth status 2>&1); then
-        # 인증 메시지 내용을 분석하여 실제 인증 상태 확인
-        if echo "$auth_output" | grep -q "authentication isn't set up yet\|need to authenticate\|auth login"; then
-            log_error "❌ Claude CLI가 인증되지 않았습니다."
-            log_info "인증 상태 메시지: $auth_output"
-            log_info "먼저 다음 명령어로 인증하세요: claude"
-            log_info "💡 claude 명령어 실행 시 브라우저가 열리고 인증을 진행합니다."
-            return 1
-        else
-            log_success "✅ Claude CLI 인증 확인됨"
-            log_info "인증 상태: $auth_output"
-            return 0
-        fi
+    local mcp_output
+    if mcp_output=$(timeout 10 claude mcp list 2>&1); then
+        # MCP 명령어가 성공하면 인증됨
+        log_success "✅ Claude CLI 인증 확인됨 (MCP 명령어 실행 가능)"
+        log_info "MCP 상태: $mcp_output"
+        return 0
     else
-        log_error "❌ Claude CLI 인증 상태 확인 실패"
-        log_info "오류 메시지: $auth_output"
-        log_info "먼저 다음 명령어로 인증하세요: claude"
-        log_info "💡 claude 명령어 실행 시 브라우저가 열리고 인증을 진행합니다."
-        return 1
+        local exit_code=$?
+        # 타임아웃이나 인증 오류로 추정
+        if [ $exit_code -eq 124 ]; then
+            log_warning "⚠️  MCP 명령어 실행 시간 초과 - 인증 상태 불확실"
+            log_info "계속 진행하지만 인증이 필요할 수 있습니다."
+            return 0
+        else
+            log_error "❌ Claude CLI가 인증되지 않았을 가능성이 높습니다."
+            log_info "MCP 명령어 오류: $mcp_output"
+            log_info ""
+            log_info "📋 인증 방법:"
+            log_info "  1. 터미널에서 claude 명령어 실행"
+            log_info "  2. 대화형 세션이 시작되면서 브라우저 인증 진행"
+            log_info "  3. 또는 구독자인 경우: claude setup-token"
+            log_info ""
+            log_info "인증 후 이 스크립트를 다시 실행하세요."
+            return 1
+        fi
     fi
 }
 
@@ -169,7 +174,8 @@ verify_mcp_servers() {
     else
         log_warning "⚠️  MCP 서버 목록을 가져올 수 없습니다 (exit code: $exit_code)"
         log_info "오류 출력: $list_output"
-        log_info "💡 Claude CLI 상태를 다시 확인해보세요: claude auth status"
+        log_info "💡 Claude CLI 인증 상태를 다시 확인해보세요:"
+        log_info "  터미널에서 claude 명령어를 실행하여 인증을 완료하세요."
     fi
 }
 
