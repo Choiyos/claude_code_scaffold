@@ -111,10 +111,19 @@ setup_claude_auth() {
         return 0
     fi
     
-    # ANTHROPIC_API_KEY 환경변수 확인
+    # CLAUDE_CODE_OAUTH_TOKEN 환경변수 확인 (우선순위)
+    if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ]; then
+        log_info "CLAUDE_CODE_OAUTH_TOKEN 환경변수를 사용하여 인증 시도 중..."
+        export CLAUDE_CODE_OAUTH_TOKEN="$CLAUDE_CODE_OAUTH_TOKEN"
+        if mcp_output=$(timeout 10 claude mcp list 2>&1); then
+            log_success "✅ OAuth 토큰을 통한 Claude CLI 인증 완료!"
+            return 0
+        fi
+    fi
+    
+    # ANTHROPIC_API_KEY 환경변수 확인 (fallback)
     if [ -n "$ANTHROPIC_API_KEY" ]; then
         log_info "ANTHROPIC_API_KEY 환경변수를 사용하여 인증 시도 중..."
-        # API 키가 있으면 환경변수로 인증 시도
         export ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY"
         if mcp_output=$(timeout 10 claude mcp list 2>&1); then
             log_success "✅ API 키를 통한 Claude CLI 인증 완료!"
@@ -123,11 +132,17 @@ setup_claude_auth() {
     fi
     
     log_info "🔐 Claude CLI 수동 인증이 필요합니다."
-    log_info "💡 DevContainer 시작 후 터미널에서 다음 명령어를 실행하세요:"
+    log_info "💡 다음 중 하나의 방법을 사용하세요:"
+    log_info ""
+    log_info "  방법 1 - OAuth 토큰 (추천):"
+    log_info "    claude setup-token"
+    log_info "    → 받은 토큰을 CLAUDE_CODE_OAUTH_TOKEN 환경변수로 설정"
+    log_info ""
+    log_info "  방법 2 - 대화형 인증:"
     log_info "    claude"
     log_info "    → 대화형 터미널이 시작되면서 브라우저로 인증 진행"
     log_info ""
-    log_info "브라우저가 열리면 Claude 계정으로 로그인하고 인증을 완료하세요."
+    log_info "OAuth 토큰 방식이 DevContainer 환경에서 더 안정적입니다."
     
     return 1  # 수동 인증 필요함을 알림
 }

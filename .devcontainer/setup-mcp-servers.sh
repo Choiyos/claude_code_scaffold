@@ -212,6 +212,13 @@ main() {
         log_info "  ANTHROPIC_API_KEY: [미설정]"
     fi
     
+    # CLAUDE_CODE_OAUTH_TOKEN 확인
+    if [ -n "${CLAUDE_CODE_OAUTH_TOKEN+x}" ] && [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ]; then
+        log_info "  CLAUDE_CODE_OAUTH_TOKEN: [설정됨]"
+    else
+        log_info "  CLAUDE_CODE_OAUTH_TOKEN: [미설정]"
+    fi
+    
     log_info ""
     
     # 인증 상태 확인

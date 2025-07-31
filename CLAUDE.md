@@ -93,7 +93,9 @@ The environment is built as a portable DevContainer that provides:
 Claude CLI-based configuration management:
 - **MCP Management**: `claude mcp add/remove` commands for MCP server registration
 - **Configuration Storage**: `~/.claude/.claude.json` managed by Claude CLI
-- **Environment Variables**: ANTHROPIC_API_KEY support for automatic authentication
+- **Environment Variables**: 
+  - `CLAUDE_CODE_OAUTH_TOKEN` (추천): OAuth 토큰을 통한 안정적 인증
+  - `ANTHROPIC_API_KEY` (fallback): API 키를 통한 인증
 - **Node.js Management**: Direct APT installation with npm global package support
 
 ### Infrastructure Services
@@ -157,11 +159,28 @@ The container automatically:
 ## Usage Notes
 
 ### First Time Setup
+
+#### 1. 환경변수 설정 (호스트 머신에서)
+OAuth 토큰 방식 (추천):
+```bash
+# 토큰 생성
+claude setup-token
+
+# 환경변수 설정 (받은 토큰으로 교체)
+export CLAUDE_CODE_OAUTH_TOKEN="sk-ant-oat01-..."
+```
+
+또는 API 키 방식:
+```bash
+export ANTHROPIC_API_KEY="sk-ant-api03-..."
+```
+
+#### 2. DevContainer 시작
 1. Clone repository to local machine
 2. Open folder in VS Code
 3. Accept "Reopen in Container" prompt
 4. Wait 3-5 minutes for automatic setup
-5. Use Claude Code CLI immediately
+5. Use Claude Code CLI immediately (인증 자동 완료)
 
 ### Daily Development
 - Open VS Code, container resumes in seconds
