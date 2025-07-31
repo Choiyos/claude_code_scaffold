@@ -30,16 +30,20 @@ log_error() {
 install_claude_code() {
     log_info "Claude Code CLI 설치 중..."
     
-    # Node.js 18.20.8 버전이 설치되어 있는지 확인
+    # Volta 환경변수 설정 (즉시 적용)
+    export VOLTA_HOME="$HOME/.volta"
+    export PATH="$VOLTA_HOME/bin:$PATH"
+    source ~/.volta/load.sh 2>/dev/null || true
+    
+    # Node.js가 설치되어 있는지 확인
     if ! command -v node &> /dev/null; then
-        log_error "Node.js가 설치되지 않았습니다. DevContainer features에서 설치될 예정입니다."
+        log_error "Node.js가 설치되지 않았습니다."
+        log_info "Volta 환경 확인: $VOLTA_HOME"
         return 1
     fi
     
-    # Claude CLI는 이미 사용자 시스템에 설치되어 있어야 함
-    # DevContainer에서는 호스트 시스템의 Claude CLI를 사용
-    log_info "Claude CLI는 호스트 시스템에서 제공되어야 합니다."
-    log_info "참고: Claude CLI는 claude.ai에서 다운로드하여 설치하세요."
+    log_info "Node.js 버전: $(node --version)"
+    log_info "npm 버전: $(npm --version)"
     
     # PATH 환경변수에 npm global bin 추가
     local npm_global_bin=$(npm config get prefix)/bin
@@ -50,13 +54,30 @@ install_claude_code() {
         log_info "NPM global bin을 PATH에 추가했습니다: $npm_global_bin"
     fi
     
-    # Claude CLI 설치 확인
+    # Claude CLI가 이미 설치되어 있는지 확인
     if command -v claude &> /dev/null; then
-        log_success "Claude CLI 설치 확인됨: $(claude --version)"
+        log_success "Claude CLI가 이미 설치되어 있습니다: $(claude --version)"
+        return 0
+    fi
+    
+    # Claude CLI 설치
+    log_info "npm으로 Claude Code CLI 설치 중..."
+    if npm install -g @anthropic-ai/claude-code; then
+        log_success "Claude Code CLI 설치 완료"
+        
+        # PATH 새로 로드
+        export PATH="$npm_global_bin:$PATH"
+        
+        # 설치 확인
+        if command -v claude &> /dev/null; then
+            log_success "Claude CLI 설치 확인됨: $(claude --version)"
+        else
+            log_warning "Claude CLI가 PATH에서 찾을 수 없습니다. 터미널을 재시작해주세요."
+        fi
     else
-        log_warning "Claude CLI가 PATH에서 찾을 수 없습니다."
-        log_info "Claude CLI를 호스트 시스템에 설치한 후 컨테이너를 재시작하세요."
-        log_info "다운로드: https://claude.ai/download"
+        log_error "Claude Code CLI 설치 실패"
+        log_info "수동 설치: npm install -g @anthropic-ai/claude-code"
+        return 1
     fi
 }
 
@@ -235,9 +256,10 @@ setup_zsh_config() {
 export PATH="$HOME/.local/bin:$PATH"
 export PYTHONPATH="/workspace:$PYTHONPATH"
 
-# Volta 설정 (Node.js 버전 관리)
+# Volta 환경변수 설정
 export VOLTA_HOME="$HOME/.volta"
 export PATH="$VOLTA_HOME/bin:$PATH"
+
 
 # 유용한 별칭
 alias ll='ls -alF'
@@ -290,7 +312,12 @@ verify_environment() {
     
     # Node.js 버전 확인
     if command -v node &> /dev/null; then
-        log_success "Node.js $(node --version) 설치 확인"
+        local node_version=$(node --version 2>/dev/null)
+        if [ -n "$node_version" ]; then
+            log_success "Node.js $node_version 설치 확인"
+        else
+            log_error "Node.js 명령어는 있지만 버전을 가져올 수 없습니다."
+        fi
     else
         log_error "Node.js가 설치되지 않았습니다."
     fi

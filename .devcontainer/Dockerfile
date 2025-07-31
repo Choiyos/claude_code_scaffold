@@ -36,6 +36,9 @@ RUN curl https://get.volta.sh | bash
 ENV VOLTA_HOME="/home/developer/.volta"
 ENV PATH="$VOLTA_HOME/bin:$PATH"
 
+# Volta로 Node.js 18.20.8 설치
+RUN bash -c 'source ~/.volta/load.sh && volta install node@18.20.8 && volta install npm@latest'
+
 # 사용자를 root로 변경하여 시스템 설정 계속
 USER root
 
