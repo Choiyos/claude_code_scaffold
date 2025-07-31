@@ -389,6 +389,12 @@ if command -v claude &> /dev/null; then
     echo "🤖 Claude CLI 사용 가능"
 fi
 
+# Claude Squad 관련 설정
+if command -v claude-squad &> /dev/null; then
+    alias cs='claude-squad'
+    echo "🤖 Claude Squad 사용 가능 (cs 별칭)"
+fi
+
 EOF
     
     log_success "Zsh 설정 완료"
@@ -432,6 +438,18 @@ verify_environment() {
         log_warning "Claude CLI를 찾을 수 없습니다."
     fi
     
+    # Claude Squad 확인
+    if command -v claude-squad &> /dev/null; then
+        log_success "Claude Squad 설치 확인: $(claude-squad --version 2>/dev/null || echo 'version check failed')"
+        if command -v cs &> /dev/null; then
+            log_success "cs 별칭 확인됨"
+        else
+            log_info "cs 별칭이 설정되지 않았습니다."
+        fi
+    else
+        log_warning "Claude Squad를 찾을 수 없습니다."
+    fi
+    
     # Claude 설정 디렉토리 확인
     if [ -d ~/.claude ]; then
         log_success "Claude 설정 디렉토리 확인: ~/.claude"
@@ -446,6 +464,51 @@ verify_environment() {
     fi
 }
 
+# Claude Squad 설치
+install_claude_squad() {
+    log_info "Claude Squad 설치 중..."
+    
+    # 필수 도구 확인
+    if ! command -v tmux &> /dev/null; then
+        log_error "tmux가 설치되지 않았습니다."
+        return 1
+    fi
+    
+    if ! command -v gh &> /dev/null; then
+        log_error "GitHub CLI(gh)가 설치되지 않았습니다."
+        return 1
+    fi
+    
+    log_success "필수 도구 확인 완료: tmux, gh"
+    
+    # Claude Squad 설치 (공식 설치 스크립트 사용)
+    log_info "Claude Squad 다운로드 및 설치 중..."
+    if curl -fsSL https://raw.githubusercontent.com/smtg-ai/claude-squad/main/install.sh | bash; then
+        log_success "Claude Squad 설치 완료"
+        
+        # cs 별칭 확인
+        if command -v claude-squad &> /dev/null; then
+            log_success "Claude Squad 실행 파일 확인: $(which claude-squad)"
+            
+            # cs 별칭 생성 (없는 경우)
+            if ! command -v cs &> /dev/null; then
+                # .zshrc에 별칭 추가
+                echo "alias cs='claude-squad'" >> ~/.zshrc
+                log_success "cs 별칭 추가 (터미널 재시작 후 사용 가능)"
+            else
+                log_success "cs 별칭 확인됨"
+            fi
+        else
+            log_warning "Claude Squad 설치는 완료되었지만 실행 파일을 찾을 수 없습니다."
+            log_info "터미널을 재시작하거나 PATH를 새로고침하세요."
+        fi
+    else
+        log_error "Claude Squad 설치 실패"
+        log_info "수동 설치: curl -fsSL https://raw.githubusercontent.com/smtg-ai/claude-squad/main/install.sh | bash"
+        return 1
+    fi
+}
+
 # 메인 실행 함수
 main() {
     log_info "Claude Code 개발환경 설정 시작"
@@ -457,6 +520,7 @@ main() {
     setup_git_config
     setup_claude_config
     install_claude_code
+    install_claude_squad
     
     # MCP 서버 설치는 별도 스크립트(setup-mcp-servers.sh)에서 자동 실행됩니다
     
@@ -480,6 +544,14 @@ main() {
         log_info "  5. Grafana 대시보드: http://localhost:3010"
         log_info ""
         log_info "🚀 Claude CLI가 모든 MCP 서버와 함께 준비되었습니다!"
+        
+        # Claude Squad 사용법 추가
+        if command -v claude-squad &> /dev/null || command -v cs &> /dev/null; then
+            log_info "🤖 Claude Squad 사용법:"
+            log_info "  cs --help           # Claude Squad 도움말"
+            log_info "  cs new project      # 새 프로젝트 생성"
+            log_info "  cs chat             # Claude Squad 대화"
+        fi
     else
         log_info "🔐 Claude CLI 수동 인증이 필요합니다!"
         log_info ""
@@ -502,6 +574,7 @@ main() {
         log_info "🚀 설정 완료 후:"
         log_info "  claude --help            # Claude CLI 도움말"
         log_info "  claude mcp list          # MCP 서버 목록"
+        log_info "  cs --help                # Claude Squad 도움말"
         log_info "  docker-compose ps        # 서비스 상태"
         log_info "  http://localhost:3010    # Grafana 대시보드"
         log_info ""
