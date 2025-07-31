@@ -128,7 +128,7 @@ add_mcp_servers() {
         "@modelcontextprotocol/server-sequential-thinking"
         "@upstash/context7-mcp"
         "@21st-dev/magic"
-        "@playwright/mcp"
+        "@executeautomation/playwright-mcp-server"
     )
     
     # 환경변수 설정 (더미 값으로 초기 설정)
