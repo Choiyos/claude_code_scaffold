@@ -120,20 +120,76 @@ docker-compose ps
 
 ---
 
-## 📁 **호스트 폴더 접근**
+## 📁 **호스트 폴더 접근 설정**
 
-기존 프로젝트를 그대로 사용하세요! 복사나 이동 불필요합니다.
+기존 프로젝트를 그대로 사용하려면 호스트 폴더를 DevContainer에 마운트해야 합니다.
 
-### 자동 마운트된 폴더들:
-```bash
-/host/Documents     # 문서 폴더
-/host/Downloads     # 다운로드 폴더  
-/host/Desktop       # 바탕화면
-/host/dev           # C:\dev (또는 ~/dev)
+### 🔧 **설정 방법**
+
+`.devcontainer/devcontainer.json` 파일에 `mounts` 섹션을 추가하세요:
+
+#### 🪟 **Windows 사용자**
+```json
+{
+  "mounts": [
+    "source=${localEnv:USERPROFILE}\\Documents,target=/host/Documents,type=bind,consistency=cached",
+    "source=${localEnv:USERPROFILE}\\Downloads,target=/host/Downloads,type=bind,consistency=cached",
+    "source=${localEnv:USERPROFILE}\\Desktop,target=/host/Desktop,type=bind,consistency=cached",
+    "source=C:\\dev,target=/host/dev,type=bind,consistency=cached"
+  ]
+}
 ```
 
-### 사용 예시:
+#### 🍎 **macOS 사용자**
+```json
+{
+  "mounts": [
+    "source=${localEnv:HOME}/Documents,target=/host/Documents,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/Downloads,target=/host/Downloads,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/Desktop,target=/host/Desktop,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/dev,target=/host/dev,type=bind,consistency=cached"
+  ]
+}
+```
+
+#### 🐧 **Linux 사용자**
+```json
+{
+  "mounts": [
+    "source=${localEnv:HOME}/Documents,target=/host/Documents,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/Downloads,target=/host/Downloads,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/Desktop,target=/host/Desktop,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/dev,target=/host/dev,type=bind,consistency=cached"
+  ]
+}
+```
+
+### 📝 **devcontainer.json 전체 예시**
+
+```json
+{
+  "name": "Claude Code Development Environment",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "postCreateCommand": "bash .devcontainer/setup-complete-environment.sh",
+  "mounts": [
+    // 여기에 위의 운영체제별 mounts 설정 추가
+  ],
+  "forwardPorts": [3010, 9090, 5432, 6379],
+  "remoteUser": "developer"
+}
+```
+
+### 🚀 **사용 방법**
+
+설정 후 DevContainer를 재빌드하면:
+
 ```bash
+# 마운트된 폴더들 확인
+ls /host/
+
 # 기존 프로젝트로 바로 이동
 cd /host/dev/my-existing-project
 
@@ -145,6 +201,12 @@ claude --help
 cs new session
 sc --help
 ```
+
+### ⚠️ **주의사항**
+
+- DevContainer 재빌드 필요: `Ctrl+Shift+P` → "Dev Containers: Rebuild Container"
+- 폴더가 존재하지 않으면 자동 생성됨
+- Windows 경로에서 백슬래시(`\`) 이스케이프 필수
 
 ---
 
