@@ -55,6 +55,12 @@ RUN curl https://get.volta.sh | bash || true
 ENV VOLTA_HOME="/home/developer/.volta"
 ENV PATH="$VOLTA_HOME/bin:$PATH"
 
+# uv (Python 패키지 관리자) 설치
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# uv PATH 설정
+ENV PATH="/home/developer/.cargo/bin:$PATH"
+
 # 사용자를 root로 변경하여 시스템 설정 계속
 USER root
 

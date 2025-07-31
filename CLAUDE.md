@@ -27,6 +27,10 @@ claude --help
 cs --help
 cs --version
 
+# Check SuperClaude Framework
+python3 -m SuperClaude --help
+sc --help  # 별칭 사용
+
 # Check services
 docker-compose ps
 
@@ -76,7 +80,8 @@ docker-compose logs -f grafana
 cd /workspace
 claude --help
 cs --help
-# Start development with Claude CLI and Claude Squad
+sc --help
+# Start development with Claude CLI, Claude Squad, and SuperClaude Framework
 
 # Access monitoring
 # Grafana: http://localhost:3010 (admin/admin)
@@ -92,8 +97,9 @@ The environment is built as a portable DevContainer that provides:
 2. **Runtime Environments**: Node.js 18.20.8, Python 3.11
 3. **Shell Environment**: Zsh + Oh My Zsh with productivity enhancements
 4. **Claude CLI**: Version 1.0.64+ with npm global installation
-5. **Claude Squad**: AI-powered development collaboration tool with tmux integration
-6. **MCP Servers**: Fully automatic setup (Sequential, Context7, Magic, Playwright×2)
+5. **Claude Squad**: AI-powered development collaboration tool with tmux integration  
+6. **SuperClaude Framework**: Advanced AI automation framework with Python integration
+7. **MCP Servers**: Fully automatic setup (Sequential, Context7, Magic, Playwright×2)
 
 ### Configuration System
 Claude CLI-based configuration management:
@@ -122,7 +128,7 @@ Minimal infrastructure for development support:
 
 1. **Environment Setup**: VS Code automatically builds and configures container
 2. **Automatic Configuration**: Team settings applied during container startup  
-3. **Development Ready**: Full Claude Code CLI, Claude Squad, and MCP servers automatically configured
+3. **Development Ready**: Full Claude Code CLI, Claude Squad, SuperClaude Framework, and MCP servers automatically configured
 4. **Manual Auth**: Only OAuth token setup required for full functionality
 5. **Infrastructure Access**: Database, cache, and monitoring ready for use
 6. **Productivity Tools**: Git aliases, shell enhancements, development utilities
@@ -140,17 +146,19 @@ Minimal infrastructure for development support:
 The container automatically:
 1. Installs Claude Code CLI 1.0.63+ 
 2. Installs Claude Squad with tmux and GitHub CLI
-3. Installs required MCP servers (5 servers)
-4. Applies team configuration settings
-5. Sets up development tools and aliases
-6. Starts infrastructure services
-7. Configures Zsh with productivity enhancements
+3. Installs SuperClaude Framework with uv package manager
+4. Installs required MCP servers (5 servers)
+5. Applies team configuration settings  
+6. Sets up development tools and aliases
+7. Starts infrastructure services
+8. Configures Zsh with productivity enhancements
 
 ### Development Tools Included
 - Claude CLI and Claude Squad (cs alias)
+- SuperClaude Framework (sc alias) with uv package manager
 - Git with team aliases and configuration
 - Node.js development tools (npm, yarn, TypeScript)
-- Python development environment
+- Python development environment (3.11+)
 - tmux for session management
 - GitHub CLI (gh) for GitHub integration
 - Database clients (PostgreSQL, Redis)
