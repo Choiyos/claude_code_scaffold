@@ -85,6 +85,7 @@ install_mcp_packages() {
         "@modelcontextprotocol/server-sequential-thinking"
         "@upstash/context7-mcp"
         "@21st-dev/magic"
+        "@executeautomation/playwright-mcp-server"
         "@playwright/mcp"
     )
     
@@ -122,6 +123,7 @@ add_mcp_servers() {
         "context7-mcp"
         "magic"
         "playwright-mcp"
+        "playwright-official"
     )
     
     local server_packages=(
@@ -129,6 +131,7 @@ add_mcp_servers() {
         "@upstash/context7-mcp"
         "@21st-dev/magic"
         "@executeautomation/playwright-mcp-server"
+        "@playwright/mcp"
     )
     
     # 환경변수 설정 (더미 값으로 초기 설정)
@@ -136,6 +139,7 @@ add_mcp_servers() {
         ""
         "UPSTASH_REDIS_REST_URL=https://dummy-url.upstash.io UPSTASH_REDIS_REST_TOKEN=dummy_token"
         "ANTHROPIC_API_KEY=dummy_key"
+        ""
         ""
     )
     
@@ -243,6 +247,10 @@ add_mcp_servers() {
         log_info "  일부 MCP 서버는 실제 API 키가 필요합니다:"
         log_info "  - context7-mcp: UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN"
         log_info "  - magic: ANTHROPIC_API_KEY (또는 필요한 API 키)"
+        log_info ""
+        log_success "✅ Playwright MCP 서버 설치 완료:"
+        log_info "  - playwright-mcp: @executeautomation/playwright-mcp-server (커뮤니티 버전)"
+        log_info "  - playwright-official: @playwright/mcp (Microsoft 공식 버전)"
         log_info ""
         log_info "💡 ~/.zshrc 또는 ~/.bashrc에 실제 API 키를 설정하세요."
     fi
