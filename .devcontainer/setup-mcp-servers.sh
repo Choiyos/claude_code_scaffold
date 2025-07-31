@@ -112,11 +112,11 @@ install_mcp_packages() {
     log_info ""
 }
 
-# MCP 서버 등록
+# MCP 서버 등록 (공식 Claude Code 방식)
 add_mcp_servers() {
-    log_info "🔧 MCP 서버 등록 시작..."
+    log_info "🔧 MCP 서버 등록 시작 (공식 방식)..."
     
-    # MCP 서버 배열 (Claude CLI 이름 규칙에 맞게 수정)
+    # MCP 서버 정보 배열
     local server_names=(
         "sequential-thinking"
         "context7-mcp"
@@ -124,11 +124,19 @@ add_mcp_servers() {
         "playwright-mcp"
     )
     
-    local server_commands=(
-        "npx @modelcontextprotocol/server-sequential-thinking"
-        "npx @upstash/context7-mcp"
-        "npx @21st-dev/magic"
-        "npx @playwright/mcp"
+    local server_packages=(
+        "@modelcontextprotocol/server-sequential-thinking"
+        "@upstash/context7-mcp"
+        "@21st-dev/magic"
+        "@playwright/mcp"
+    )
+    
+    # 환경변수 설정 (더미 값으로 초기 설정)
+    local server_env_vars=(
+        ""
+        "UPSTASH_REDIS_REST_URL=https://dummy-url.upstash.io UPSTASH_REDIS_REST_TOKEN=dummy_token"
+        "ANTHROPIC_API_KEY=dummy_key"
+        ""
     )
     
     local success_count=0
@@ -160,12 +168,13 @@ add_mcp_servers() {
     fi
     log_info ""
     
-    # 서버 등록 루프
+    # 서버 등록 루프 (공식 Claude Code 방식)
     i=0
     local registered=0
     while [ $i -lt $total_count ]; do
         local server_name="${server_names[$i]}"
-        local command="${server_commands[$i]}"
+        local package="${server_packages[$i]}"
+        local env_vars="${server_env_vars[$i]}"
         
         # 빈 이름 건너뛰기
         if [ -z "$server_name" ]; then
@@ -175,31 +184,50 @@ add_mcp_servers() {
         fi
         
         registered=$((registered + 1))
-        log_info "[$registered/?] 🔄 MCP 서버 등록 중: $server_name"
-        log_info "실행 명령어: claude mcp add \"$server_name\" \"$command\""
+        log_info "[$registered/$total_count] 🔄 MCP 서버 등록 중: $server_name"
+        
+        # 공식 Claude Code MCP 등록 명령어 구성
+        local claude_cmd="claude mcp add --scope user $server_name"
+        
+        # 환경변수가 있는 경우 추가
+        if [ -n "$env_vars" ]; then
+            # 환경변수를 -e 플래그로 변환
+            local env_flags=""
+            for env_var in $env_vars; do
+                local key=$(echo "$env_var" | cut -d'=' -f1)
+                local value=$(echo "$env_var" | cut -d'=' -f2-)
+                env_flags="$env_flags -e $key=$value"
+            done
+            claude_cmd="$claude_cmd $env_flags"
+        fi
+        
+        # npx 명령어 추가
+        claude_cmd="$claude_cmd -- npx -y $package"
+        
+        log_info "실행 명령어: $claude_cmd"
         
         # 명령어 실행 및 상세 로그
         local output
         local exit_code
         
         log_info "⏳ 명령어 실행 중... (최대 30초 대기)"
-        if output=$(timeout 30 claude mcp add "$server_name" "$command" 2>&1); then
+        if output=$(timeout 30 bash -c "$claude_cmd" 2>&1); then
             exit_code=0
         else
             exit_code=$?
         fi
         
         if [ $exit_code -eq 0 ]; then
-            log_success "✅ [$current/$total_count] $server_name 등록 완료"
+            log_success "✅ [$registered/$total_count] $server_name 등록 완료"
             log_info "출력: $output"
             ((success_count++))
         elif [ $exit_code -eq 124 ]; then
-            log_error "⏰ [$current/$total_count] $server_name 등록 타임아웃 (30초)"
+            log_error "⏰ [$registered/$total_count] $server_name 등록 타임아웃 (30초)"
             log_info "출력: $output"
         else
-            log_warning "⚠️  [$current/$total_count] $server_name 등록 실패 (exit code: $exit_code)"
+            log_warning "⚠️  [$registered/$total_count] $server_name 등록 실패 (exit code: $exit_code)"
             log_info "오류 출력: $output"
-            log_info "💡 수동으로 등록하려면: claude mcp add \"$server_name\" \"$command\""
+            log_info "💡 수동으로 등록하려면: $claude_cmd"
         fi
         
         log_info ""
@@ -207,7 +235,48 @@ add_mcp_servers() {
     done
     
     log_info "📊 MCP 서버 등록 결과: $success_count/$total_count 성공"
+    
+    # 설치 완료 후 사용자에게 더미 환경변수 안내
+    if [ $success_count -gt 0 ]; then
+        log_info ""
+        log_warning "⚠️  환경변수 설정 필요:"
+        log_info "  일부 MCP 서버는 실제 API 키가 필요합니다:"
+        log_info "  - context7-mcp: UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN"
+        log_info "  - magic: ANTHROPIC_API_KEY (또는 필요한 API 키)"
+        log_info ""
+        log_info "💡 ~/.zshrc 또는 ~/.bashrc에 실제 API 키를 설정하세요."
+    fi
+    
     return 0
+}
+
+# MCP 서버 디버그 모드 검증 (공식 가이드 방식)
+verify_mcp_servers_debug() {
+    log_info "🐛 MCP 서버 디버그 모드 검증 중..."
+    
+    # 기본 목록 확인
+    log_info "📋 등록된 MCP 서버 목록 확인..."
+    local list_output
+    if list_output=$(claude mcp list 2>&1); then
+        log_success "✅ MCP 서버 목록 조회 성공"
+        echo "$list_output" | while IFS= read -r line; do
+            if [ -n "$line" ]; then
+                log_info "  📌 $line"
+            fi
+        done
+    else
+        log_warning "⚠️  MCP 서버 목록 조회 실패"
+        log_info "오류: $list_output"
+        return 1
+    fi
+    
+    log_info ""
+    log_info "🔍 디버그 모드 검증 안내:"
+    log_info "  수동으로 다음 명령어를 실행하여 MCP 서버 상태를 확인하세요:"
+    log_info "  1. echo \"/mcp\" | claude --debug"
+    log_info "  2. 2분간 디버그 메시지 관찰"
+    log_info "  3. 연결 실패 시 환경변수 또는 패키지 설치 확인"
+    log_info ""
 }
 
 # 등록된 MCP 서버 확인
@@ -300,7 +369,7 @@ main() {
     
     # 등록 결과 확인
     log_info "📋 4단계: 등록 결과 확인"
-    verify_mcp_servers
+    verify_mcp_servers_debug
     log_info ""
     
     log_success "🎉 MCP 서버 등록 프로세스 완료!"
