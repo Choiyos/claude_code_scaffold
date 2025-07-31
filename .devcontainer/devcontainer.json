@@ -10,7 +10,7 @@
     },
     "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },
-  "postCreateCommand": "bash .devcontainer/setup-claude-environment.sh && bash .devcontainer/setup-mcp-servers.sh",
+  "postCreateCommand": "bash .devcontainer/setup-complete-environment.sh",
   "forwardPorts": [3010, 9090, 5432, 6379],
   "portsAttributes": {
     "3010": {
