@@ -33,18 +33,28 @@ else
     echo "⚠️  Claude CLI를 찾을 수 없습니다. MCP 서버 설치를 건너뜁니다."
 fi
 
-# 마운트 폴더 검증 및 안내
-echo "🔧 마지막 단계: 호스트 폴더 마운트 확인 중..."
-if [[ -d "/host/projects" ]]; then
-    if [[ "$(ls -A /host/projects 2>/dev/null)" ]]; then
-        echo "✅ 호스트 프로젝트 폴더 연결됨: /host/projects"
-        echo "📁 마운트된 내용: $(ls /host/projects | head -3 | tr '\n' ' ')..."
+# 호스트 폴더 연결 설정
+echo "🔧 마지막 단계: 호스트 폴더 연결 설정 중..."
+
+if [[ -n "$CLAUDE_HOST_PROJECTS" ]]; then
+    if [[ -d "$CLAUDE_HOST_PROJECTS" ]]; then
+        # /host 디렉토리 생성
+        sudo mkdir -p /host
+        sudo ln -sf "$CLAUDE_HOST_PROJECTS" /host/projects
+        sudo chown -h developer:developer /host/projects
+        
+        echo "✅ 호스트 프로젝트 폴더 연결됨: /host/projects → $CLAUDE_HOST_PROJECTS"
+        if [[ "$(ls -A "$CLAUDE_HOST_PROJECTS" 2>/dev/null)" ]]; then
+            echo "📁 연결된 내용: $(ls "$CLAUDE_HOST_PROJECTS" | head -3 | tr '\n' ' ')..."
+        else
+            echo "📁 연결된 폴더가 비어있습니다"
+        fi
     else
-        echo "ℹ️  호스트 프로젝트 폴더는 연결되었지만 비어있습니다"
-        echo "💡 CLAUDE_HOST_PROJECTS 환경변수로 원하는 폴더를 설정하세요"
+        echo "⚠️  환경변수 경로가 존재하지 않습니다: $CLAUDE_HOST_PROJECTS"
+        echo "💡 호스트에서 폴더를 생성하거나 다른 경로로 설정하세요"
     fi
 else
-    echo "⚠️  호스트 프로젝트 폴더가 마운트되지 않았습니다"
+    echo "ℹ️  CLAUDE_HOST_PROJECTS 환경변수가 설정되지 않았습니다"
     echo ""
     echo "📝 호스트 폴더를 연결하려면:"
     echo "   1. 호스트에서 환경변수 설정:"
@@ -54,7 +64,7 @@ else
     echo "   2. DevContainer 재빌드:"
     echo "      Ctrl+Shift+P → 'Dev Containers: Rebuild Container'"
     echo ""
-    echo "💡 또는 workspace 폴더를 사용하세요: cd workspace"
+    echo "💡 지금은 workspace 폴더를 사용하세요: cd workspace"
 fi
 
 echo ""
@@ -65,7 +75,7 @@ echo "  - Claude CLI: claude --help"
 echo "  - MCP 서버: claude mcp list"
 echo "  - 인프라 서비스: docker-compose ps"
 echo "  - Grafana: http://localhost:3010"
-if [[ -d "/host/projects" ]]; then
+if [[ -L "/host/projects" ]]; then
     echo "  - 호스트 프로젝트: cd /host/projects"
 fi
 echo "  - 워크스페이스: cd workspace"
