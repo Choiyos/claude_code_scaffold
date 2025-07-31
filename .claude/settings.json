@@ -7,7 +7,9 @@
       "Bash(npm deploy)",
       "Bash(yarn deploy)",
       "Bash(npm:deploy)",
-      "Bash(yarn:deploy)"
+      "Bash(yarn:deploy)",
+      "Bash(python manage.py makemigrations)",
+      "Bash(python manage.py migrate)"
     ]
   },
   "model": "sonnet"
