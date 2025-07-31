@@ -44,8 +44,17 @@ if [[ -d "/host/projects" ]]; then
         echo "💡 CLAUDE_HOST_PROJECTS 환경변수로 원하는 폴더를 설정하세요"
     fi
 else
-    echo "ℹ️  호스트 프로젝트 폴더가 마운트되지 않았습니다"
-    echo "💡 workspace 폴더를 사용하거나 환경변수를 설정하세요"
+    echo "⚠️  호스트 프로젝트 폴더가 마운트되지 않았습니다"
+    echo ""
+    echo "📝 호스트 폴더를 연결하려면:"
+    echo "   1. 호스트에서 환경변수 설정:"
+    echo "      export CLAUDE_HOST_PROJECTS=\"\$HOME/dev\""
+    echo "      echo 'export CLAUDE_HOST_PROJECTS=\"\$HOME/dev\"' >> ~/.zshrc"
+    echo ""
+    echo "   2. DevContainer 재빌드:"
+    echo "      Ctrl+Shift+P → 'Dev Containers: Rebuild Container'"
+    echo ""
+    echo "💡 또는 workspace 폴더를 사용하세요: cd workspace"
 fi
 
 echo ""
