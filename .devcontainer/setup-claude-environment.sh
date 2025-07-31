@@ -79,6 +79,31 @@ install_claude_code() {
     fi
 }
 
+# Claude CLI 자동 인증
+setup_claude_auth() {
+    log_info "Claude CLI 인증 설정 중..."
+    
+    # Claude CLI 인증 상태 확인
+    if claude auth status &>/dev/null; then
+        log_success "Claude CLI가 이미 인증되어 있습니다."
+        return 0
+    fi
+    
+    log_info "🔐 Claude CLI 인증이 필요합니다. 브라우저가 자동으로 열립니다..."
+    log_info "💡 브라우저에서 Claude 계정으로 로그인해주세요."
+    log_info "⏳ 인증 완료까지 최대 2분 대기합니다..."
+    
+    # 백그라운드에서 claude auth login 실행
+    if timeout 120 claude auth login; then
+        log_success "✅ Claude CLI 인증 완료!"
+        return 0
+    else
+        log_warning "⚠️  Claude CLI 인증이 완료되지 않았습니다."
+        log_info "수동으로 인증하려면: claude auth login"
+        return 1
+    fi
+}
+
 # MCP 서버 설치 (Claude CLI installer 사용)
 install_mcp_servers() {
     log_info "MCP 서버들 설치 중 (Claude CLI installer 사용)..."
@@ -87,6 +112,15 @@ install_mcp_servers() {
     if ! command -v claude &> /dev/null; then
         log_error "Claude CLI를 찾을 수 없습니다. 먼저 Claude CLI를 설치해야 합니다."
         return 1
+    fi
+    
+    # Claude CLI 인증 확인 및 자동 설정
+    if ! claude auth status &>/dev/null; then
+        log_warning "Claude CLI가 인증되지 않았습니다. 인증을 진행합니다..."
+        if ! setup_claude_auth; then
+            log_error "Claude CLI 인증 실패. MCP 서버 설치를 건너뜁니다."
+            return 1
+        fi
     fi
     
     # MCP 서버들 설치 (claude mcp add 사용)
@@ -370,27 +404,50 @@ main() {
     setup_git_config
     setup_claude_config
     install_claude_code
-    install_mcp_servers
+    
+    # Claude CLI 설치 성공 시 자동 인증 및 MCP 설치 진행
+    if command -v claude &> /dev/null; then
+        setup_claude_auth
+        install_mcp_servers
+    else
+        log_warning "Claude CLI가 설치되지 않았으므로 MCP 서버 설치를 건너뜁니다."
+    fi
+    
     setup_zsh_config
     start_services
     verify_environment
     
     log_success "🎉 Claude Code 개발환경 설정 완료!"
     log_info ""
-    log_info "🔐 중요: Claude CLI 초기 인증이 필요합니다!"
-    log_info ""
-    log_info "다음 단계:"
-    log_info "  1. 터미널 재시작: exec zsh"
-    log_info "  2. Claude CLI 인증: claude auth login"
-    log_info "     → 브라우저가 열리면 Claude 계정으로 로그인"
-    log_info "     → 인증 완료 후 터미널로 돌아옴"
-    log_info "  3. Claude CLI 사용: claude --help"
-    log_info "  4. MCP 서버 확인: claude mcp list"
-    log_info "  5. 서비스 상태 확인: docker-compose ps"
-    log_info "  6. Grafana 대시보드: http://localhost:3010"
-    log_info ""
-    log_info "⚠️  인증 없이는 Claude CLI가 작동하지 않습니다"
-    log_info "💡 인증 후 MCP 서버들이 자동으로 연결됩니다"
+    
+    # Claude CLI 인증 상태에 따른 메시지 표시
+    if command -v claude &> /dev/null && claude auth status &>/dev/null; then
+        log_success "✅ Claude CLI 인증 완료 - 바로 사용 가능합니다!"
+        log_info ""
+        log_info "다음 단계:"
+        log_info "  1. 터미널 재시작: exec zsh"
+        log_info "  2. Claude CLI 사용: claude --help"
+        log_info "  3. MCP 서버 확인: claude mcp list"
+        log_info "  4. 서비스 상태 확인: docker-compose ps"
+        log_info "  5. Grafana 대시보드: http://localhost:3010"
+        log_info ""
+        log_info "🚀 Claude CLI가 모든 MCP 서버와 함께 준비되었습니다!"
+    else
+        log_info "🔐 Claude CLI 수동 인증이 필요합니다!"
+        log_info ""
+        log_info "다음 단계:"
+        log_info "  1. 터미널 재시작: exec zsh"
+        log_info "  2. Claude CLI 인증: claude auth login"
+        log_info "     → 브라우저가 열리면 Claude 계정으로 로그인"
+        log_info "     → 인증 완료 후 터미널로 돌아옴"
+        log_info "  3. MCP 서버 설치: claude mcp add [서버명]"
+        log_info "  4. Claude CLI 사용: claude --help"
+        log_info "  5. 서비스 상태 확인: docker-compose ps"
+        log_info "  6. Grafana 대시보드: http://localhost:3010"
+        log_info ""
+        log_info "⚠️  인증 없이는 Claude CLI가 작동하지 않습니다"
+    fi
+    
     log_info ""
     log_info "문제가 발생하면 다음 명령어로 로그를 확인하세요:"
     log_info "  docker-compose logs -f"
