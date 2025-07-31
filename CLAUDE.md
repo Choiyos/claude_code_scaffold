@@ -86,15 +86,15 @@ The environment is built as a portable DevContainer that provides:
 1. **Base OS**: Ubuntu 22.04 LTS for maximum compatibility
 2. **Runtime Environments**: Node.js 18.20.8, Python 3.11
 3. **Shell Environment**: Zsh + Oh My Zsh with productivity enhancements
-4. **Claude CLI**: Version 1.0.63+ from host system
-5. **MCP Servers**: Auto-installed via `claude mcp install` (Sequential, Context7, Magic, Playwright)
+4. **Claude CLI**: Version 1.0.64+ with npm global installation
+5. **MCP Servers**: Semi-automatic setup (Sequential, Context7, Magic, Playwright)
 
 ### Configuration System
 Claude CLI-based configuration management:
-- **MCP Management**: `claude mcp install/uninstall` commands for MCP server management
+- **MCP Management**: `claude mcp add/remove` commands for MCP server registration
 - **Configuration Storage**: `~/.claude/.claude.json` managed by Claude CLI
-- **Environment Variables**: Automatically set in container
-- **Volta Integration**: Node.js version management per project
+- **Environment Variables**: ANTHROPIC_API_KEY support for automatic authentication
+- **Node.js Management**: Direct APT installation with npm global package support
 
 ### Infrastructure Services
 Minimal infrastructure for development support:
@@ -113,10 +113,13 @@ Minimal infrastructure for development support:
 ## Development Workflow
 
 1. **Environment Setup**: VS Code automatically builds and configures container
-2. **Automatic Configuration**: Team settings applied during container startup
-3. **Development Ready**: Claude Code CLI immediately available
-4. **Infrastructure Access**: Database, cache, and monitoring ready for use
-5. **Productivity Tools**: Git aliases, shell enhancements, development utilities
+2. **Automatic Configuration**: Team settings applied during container startup  
+3. **Claude CLI Setup**: 2-step manual configuration required
+   - `claude auth login` - Browser authentication
+   - `bash .devcontainer/setup-mcp-servers.sh` - MCP server registration
+4. **Development Ready**: Full Claude Code CLI with MCP servers available
+5. **Infrastructure Access**: Database, cache, and monitoring ready for use
+6. **Productivity Tools**: Git aliases, shell enhancements, development utilities
 
 ## Project Structure Notes
 
