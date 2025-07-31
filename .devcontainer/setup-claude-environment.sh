@@ -396,10 +396,13 @@ if command -v claude-squad &> /dev/null; then
 fi
 
 # SuperClaude Framework 관련 설정
-if command -v uv &> /dev/null && python3 -c "import SuperClaude" 2>/dev/null; then
+if python3 -c "import SuperClaude" 2>/dev/null; then
     echo "🚀 SuperClaude Framework 사용 가능"
-    # SuperClaude 별칭 추가 (선택사항)
+    # SuperClaude 별칭 추가
     alias sc='python3 -m SuperClaude'
+    
+    # PATH에 user site-packages 추가 (pip --user 설치용)
+    export PATH="$HOME/.local/bin:$PATH"
 fi
 
 EOF
@@ -460,15 +463,19 @@ verify_environment() {
     # SuperClaude Framework 확인
     if command -v uv &> /dev/null; then
         log_success "uv 패키지 관리자 확인됨: $(uv --version 2>/dev/null || echo 'version check failed')"
-        
-        # SuperClaude 설치 확인
-        if python3 -c "import SuperClaude; print('SuperClaude Framework 설치 확인됨')" 2>/dev/null; then
-            log_success "SuperClaude Framework 설치 확인됨"
-        else
-            log_info "SuperClaude Framework가 아직 설치되지 않았습니다."
-        fi
     else
         log_warning "uv 패키지 관리자를 찾을 수 없습니다."
+    fi
+    
+    # SuperClaude 설치 확인 (python import 테스트)
+    if python3 -c "import SuperClaude; print('SuperClaude Framework 설치 확인됨')" 2>/dev/null; then
+        log_success "SuperClaude Framework 설치 확인됨"
+        
+        # SuperClaude 버전 확인 시도
+        local sc_version=$(python3 -c "import SuperClaude; print(SuperClaude.__version__)" 2>/dev/null || echo "version unknown")
+        log_info "SuperClaude Framework 버전: $sc_version"
+    else
+        log_info "SuperClaude Framework가 아직 설치되지 않았습니다."
     fi
     
     # Claude 설정 디렉토리 확인
@@ -534,32 +541,85 @@ install_claude_squad() {
 install_superclaude() {
     log_info "SuperClaude Framework 설치 중..."
     
-    # uv 패키지 관리자 확인
-    if ! command -v uv &> /dev/null; then
-        log_error "uv 패키지 관리자가 설치되지 않았습니다."
+    # Python3 확인 (DevContainer 내부에서는 정상 작동)
+    if ! command -v python3 &> /dev/null; then
+        log_error "Python3가 설치되지 않았습니다."
         return 1
     fi
     
-    log_success "uv 패키지 관리자 확인 완료"
+    log_success "Python3 확인 완료: $(python3 --version 2>&1 || echo 'version check failed')"
     
-    # SuperClaude 설치 (PyPI 방식)
-    log_info "SuperClaude Framework PyPI에서 설치 중..."
-    if uv add SuperClaude; then
+    # SuperClaude가 이미 설치되어 있는지 확인
+    if python3 -c "import SuperClaude" 2>/dev/null; then
+        log_success "SuperClaude Framework가 이미 설치되어 있습니다"
+        return 0
+    fi
+    
+    # pip으로 SuperClaude 설치 (가장 안정적인 방법)
+    log_info "pip으로 SuperClaude Framework 설치 중..."
+    
+    # PATH에 user site-packages 추가
+    export PATH="$HOME/.local/bin:$PATH"
+    
+    # pip 업그레이드
+    python3 -m pip install --user --upgrade pip >/dev/null 2>&1
+    
+    # SuperClaude 설치
+    if python3 -m pip install --user SuperClaude; then
         log_success "SuperClaude Framework 설치 완료"
         
-        # SuperClaude 초기화 실행
-        log_info "SuperClaude Framework 초기화 중..."
-        if python3 -m SuperClaude install --minimal; then
-            log_success "SuperClaude Framework 초기화 완료"
+        # 설치 확인
+        if python3 -c "import SuperClaude" 2>/dev/null; then
+            log_success "SuperClaude Framework import 확인 완료"
+            
+            # SuperClaude 초기화 시도 (실패해도 괜찮음)
+            log_info "SuperClaude Framework 초기화 시도 중..."
+            if python3 -m SuperClaude install --minimal 2>/dev/null; then
+                log_success "SuperClaude Framework 초기화 완료"
+            else
+                log_info "초기화는 건너뛰고 기본 설치만 완료했습니다"
+                log_info "수동 초기화: python3 -m SuperClaude install"
+            fi
         else
-            log_warning "SuperClaude Framework 초기화 실패, 수동으로 실행하세요"
-            log_info "수동 초기화: python3 -m SuperClaude install"
+            log_error "SuperClaude Framework 설치 후 import 실패"
+            return 1
         fi
     else
         log_error "SuperClaude Framework 설치 실패"
-        log_info "수동 설치: uv add SuperClaude"
-        return 1
+        
+        # uv가 있다면 uv로 시도
+        if command -v uv &> /dev/null; then
+            log_info "uv로 대체 설치 시도 중..."
+            
+            # 임시 디렉토리에서 uv 설치 시도
+            local temp_dir=$(mktemp -d)
+            cd "$temp_dir"
+            
+            if uv init superclaude-temp --python 3.11 >/dev/null 2>&1; then
+                cd superclaude-temp
+                if uv add SuperClaude >/dev/null 2>&1; then
+                    log_success "uv로 SuperClaude Framework 설치 완료"
+                    
+                    # 전역 설치를 위해 pip으로 다시 설치
+                    if uv run pip install --user SuperClaude >/dev/null 2>&1; then
+                        log_success "전역 설치 완료"
+                    fi
+                fi
+            fi
+            
+            cd /workspace
+            rm -rf "$temp_dir"
+        fi
+        
+        # 최종 확인
+        if ! python3 -c "import SuperClaude" 2>/dev/null; then
+            log_warning "SuperClaude Framework 자동 설치 실패"
+            log_info "수동 설치: python3 -m pip install --user SuperClaude"
+            return 1
+        fi
     fi
+    
+    return 0
 }
 
 # 메인 실행 함수
