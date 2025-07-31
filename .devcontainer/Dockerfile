@@ -1,8 +1,15 @@
 # 간단하고 효율적인 Claude Code 개발환경
 FROM ubuntu:22.04
 
-# 패키지 관리자 업데이트 및 기본 도구 설치
-RUN apt-get update && apt-get install -y \
+# 빠른 APT 미러 설정 (선택사항 - 주석 해제하여 사용)
+# RUN sed -i 's/archive.ubuntu.com/mirror.kakao.com/g' /etc/apt/sources.list
+
+# 환경 변수 설정으로 apt-get 속도 개선
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Asia/Seoul
+
+# 패키지 관리자 업데이트 및 기본 도구 설치 (최적화)
+RUN apt-get update --fix-missing && apt-get install -y --no-install-recommends \
     curl \
     wget \
     git \
@@ -18,15 +25,17 @@ RUN apt-get update && apt-get install -y \
     zip \
     tmux \
     expect \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# GitHub CLI 설치
+# GitHub CLI 설치 (최적화)
 RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
     && chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
     && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
-    && apt-get update \
-    && apt-get install -y gh \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get update --fix-missing \
+    && apt-get install -y --no-install-recommends gh \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # 개발자 사용자 생성
 RUN groupadd --gid 1000 developer \
@@ -42,9 +51,11 @@ RUN sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/inst
 # 사용자를 root로 변경하여 시스템 설정 계속
 USER root
 
-# Node.js 18.x 설치 (직접 설치 방식)
+# Node.js 18.x 설치 (직접 설치 방식 - 최적화)
 RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
-    && apt-get install -y nodejs
+    && apt-get install -y --no-install-recommends nodejs \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # 다시 developer 사용자로 변경
 USER developer
