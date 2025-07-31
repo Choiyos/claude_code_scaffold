@@ -82,6 +82,9 @@ WORKDIR /workspace
 # workspace 디렉토리 권한 설정
 RUN chown -R developer:developer /workspace
 
+# Windows 호환성을 위한 빈 디렉토리 생성
+RUN mkdir -p /tmp/empty && chmod 755 /tmp/empty
+
 # 개발자 사용자로 기본 설정
 USER developer
 WORKDIR /workspace

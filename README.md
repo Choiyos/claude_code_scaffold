@@ -87,11 +87,17 @@ cd claude_code_scaffold
 # 컨테이너 내부에서
 claude auth login  # 브라우저에서 인증
 
-# MCP 서버 수동 설치
-claude mcp install @modelcontextprotocol/server-sequential-thinking
-claude mcp install @upstash/context7-mcp  
-claude mcp install @21st-dev/magic
-claude mcp install @executeautomation/playwright-mcp-server
+# MCP 서버 수동 추가 (npm 설치 후)
+npm install -g @modelcontextprotocol/server-sequential-thinking
+npm install -g @upstash/context7-mcp
+npm install -g @21st-dev/magic
+npm install -g @executeautomation/playwright-mcp-server
+
+# Claude에 MCP 서버 등록
+claude mcp add sequential 'npx @modelcontextprotocol/server-sequential-thinking'
+claude mcp add context7 'npx @upstash/context7-mcp'
+claude mcp add magic 'npx @21st-dev/magic'
+claude mcp add playwright 'npx @executeautomation/playwright-mcp-server'
 
 # 설치 확인
 claude mcp list
@@ -168,22 +174,50 @@ cp -r /path/to/claude_code_scaffold/.devcontainer .
 
 ## 🚨 **트러블슈팅**
 
-### **MCP 서버가 설치되지 않은 경우**
+### **MCP 서버 연결 실패 문제**
 
-1. **토큰 확인**:
+MCP 서버가 목록에는 나타나지만 "Failed to connect" 오류가 발생하는 경우:
+
+1. **Windows 검증된 방식으로 재설치 (권장)**:
    ```bash
-   echo $CLAUDE_CODE_OAUTH_TOKEN  # 토큰이 설정되었는지 확인
+   # 컨테이너 내부에서
+   bash .devcontainer/setup-mcp-windows-proven.sh
+   
+   # 터미널 재시작
+   exec zsh
+   
+   # 확인
+   claude mcp list
    ```
 
-2. **수동 인증**:
+2. **수동 설치 (위 방법이 실패한 경우)**:
    ```bash
-   claude auth login  # 브라우저에서 인증
+   # 기존 서버 제거
+   claude mcp remove sequential
+   claude mcp remove context7
+   claude mcp remove magic
+   claude mcp remove playwright
+   
+   # npm 패키지 설치
+   npm install -g @modelcontextprotocol/server-sequential-thinking
+   npm install -g @upstash/context7-mcp
+   npm install -g @21st-dev/magic
+   npm install -g @executeautomation/playwright-mcp-server
+   
+   # Windows 검증된 형식으로 등록 (--scope user와 npx -y 사용)
+   claude mcp add --scope user sequential -- npx -y @modelcontextprotocol/server-sequential-thinking
+   claude mcp add --scope user context7 -- npx -y @upstash/context7-mcp
+   claude mcp add --scope user magic -- npx -y @21st-dev/magic
+   claude mcp add --scope user playwright -- npx -y @executeautomation/playwright-mcp-server
    ```
 
-3. **수동 설치**:
+3. **검증 방법**:
    ```bash
-   claude mcp install @modelcontextprotocol/server-sequential-thinking
-   # 필요한 서버들 개별 설치
+   # MCP 서버 목록 확인
+   claude mcp list
+   
+   # 디버그 모드로 확인
+   echo '/mcp' | claude --debug
    ```
 
 ### **Claude Squad가 작동하지 않는 경우**

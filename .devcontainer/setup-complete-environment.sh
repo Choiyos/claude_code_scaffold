@@ -24,7 +24,7 @@ if command -v claude &> /dev/null; then
     
     # 두 번째 단계: MCP 서버 설정
     echo "🔧 2단계: MCP 서버 자동 설치 중..."
-    if bash .devcontainer/setup-mcp-servers.sh; then
+    if bash .devcontainer/setup-mcp-windows-proven.sh; then
         echo "✅ MCP 서버 설치 완료"
     else
         echo "⚠️  MCP 서버 설치에 문제가 있지만 계속 진행합니다"

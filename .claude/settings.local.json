@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "mcp__sequential__sequentialthinking"
+      "mcp__sequential__sequentialthinking",
+      "WebFetch(domain:github.com)"
     ],
     "deny": []
   }

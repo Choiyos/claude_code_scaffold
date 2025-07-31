@@ -4,10 +4,9 @@
     "dockerfile": "Dockerfile",
     "context": ".."
   },
-  "initializeCommand": "echo \"Checking CLAUDE_HOST_PROJECTS: ${CLAUDE_HOST_PROJECTS:-not_set}\"",
   "mounts": [
     {
-      "source": "${localEnv:CLAUDE_HOST_PROJECTS}",
+      "source": "${localEnv:CLAUDE_HOST_PROJECTS:-/tmp/empty}",
       "target": "/host/projects",
       "type": "bind",
       "consistency": "cached"
