@@ -2,7 +2,7 @@
 
 > **AI 개발을 위한 완전 자동화 DevContainer** - Claude CLI, MCP 서버, AI 도구들이 3분 만에 자동 설치되는 개발 환경
 
-[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-brightgreen)](https://github.com/Choiyos/claude_code_scaffold)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-brightgreen)](https://github.com/YOUR_USERNAME/claude_code_scaffold)
 [![VS Code](https://img.shields.io/badge/VS%20Code-DevContainer-blue)](https://code.visualstudio.com/docs/devcontainers/containers)
 [![Docker](https://img.shields.io/badge/Docker-Required-blue)](https://www.docker.com/)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
@@ -57,7 +57,7 @@ source ~/.zshrc
 ### 2️⃣ **프로젝트 클론**
 
 ```bash
-git clone https://github.com/Choiyos/claude_code_scaffold.git
+git clone https://github.com/YOUR_USERNAME/claude_code_scaffold.git
 cd claude_code_scaffold
 ```
 
@@ -374,9 +374,9 @@ docker-compose logs -f
 
 ## 🙋‍♂️ **지원 및 문의**
 
-- **Issues**: [GitHub Issues](https://github.com/Choiyos/claude_code_scaffold/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/Choiyos/claude_code_scaffold/discussions)
-- **Wiki**: [프로젝트 Wiki](https://github.com/Choiyos/claude_code_scaffold/wiki)
+- **Issues**: [GitHub Issues](https://github.com/YOUR_USERNAME/claude_code_scaffold/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/YOUR_USERNAME/claude_code_scaffold/discussions)
+- **Wiki**: [프로젝트 Wiki](https://github.com/YOUR_USERNAME/claude_code_scaffold/wiki)
 
 ---
 
@@ -392,7 +392,7 @@ docker-compose logs -f
 
 **⭐ 이 프로젝트가 도움이 되셨다면 Star를 눌러주세요! ⭐**
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Choiyos/claude_code_scaffold&type=Date)](https://star-history.com/#Choiyos/claude_code_scaffold&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=YOUR_USERNAME/claude_code_scaffold&type=Date)](https://star-history.com/#YOUR_USERNAME/claude_code_scaffold&Date)
 
 **🚀 Made with ❤️ by AI Development Community**
 
