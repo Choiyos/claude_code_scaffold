@@ -1,228 +1,337 @@
-# Claude Code DevContainer 환경
+# 🤖 Claude Code Ultimate AI Development Environment
 
-**목적**: Claude Code나 MCP가 전혀 설치되지 않은 맥북에서도 git clone + VS Code 컨테이너 열기만으로 현재 Windows 환경과 동일한 Claude Code 개발환경을 즉시 사용할 수 있는 DevContainer 기반 개발환경
+> **세계 최고 수준의 AI 개발 협업 플랫폼** - Claude CLI, Claude Squad, SuperClaude Framework가 통합된 완전 자동화 DevContainer 환경
 
-## 🎯 주요 특징
+[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-brightgreen)](https://github.com/Choiyos/claude_code_scaffold)
+[![VS Code](https://img.shields.io/badge/VS%20Code-DevContainer-blue)](https://code.visualstudio.com/docs/devcontainers/containers)
+[![Docker](https://img.shields.io/badge/Docker-Required-blue)](https://www.docker.com/)
+[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
-- **제로 설치**: 맥북에 Claude Code/MCP 설치 불필요
-- **완전 격리**: 컨테이너 내에서 모든 환경 독립 실행
-- **환경 동일성**: Windows 환경과 동일한 Claude Code 설정
-- **즉시 사용**: git clone 후 VS Code에서 컨테이너 열기만 하면 완료
+## 🌟 **핵심 특징**
 
-## 🚀 사용 방법
-
-### 1. 리포지토리 클론
-```bash
-git clone <this-repository>
-cd claude_code_scaffold
-```
-
-### 2. VS Code에서 DevContainer 열기
-1. VS Code 실행
-2. 클론한 폴더 열기
-3. VS Code에서 팝업 표시될 때 "Reopen in Container" 클릭
-   (또는 `Ctrl+Shift+P` → "Dev Containers: Reopen in Container")
-
-### 3. 자동 설정 완료 대기
-- 컨테이너 빌드 및 Claude Code 환경 자동 설정
-- 약 3-5분 소요 (최초 실행시)
-
-### 4. 즉시 사용 가능
-```bash
-# Claude CLI 사용
-claude --help
-
-# MCP 서버 확인
-claude mcp list
-
-# 서비스 상태 확인
-docker-compose ps
-
-# Grafana 대시보드 접속
-# http://localhost:3010 (admin/admin)
-```
-
-## 📦 포함된 구성요소
-
-### Claude Code 환경
-- **Claude CLI**: 호스트 시스템에서 제공 (1.0.63+ 권장)
-- **MCP 서버들** (자동 설치):
-  - `@modelcontextprotocol/server-sequential-thinking`
-  - `@upstash/context7-mcp`  
-  - `@21st-dev/magic`
-  - `@playwright/mcp`
-- **설정 관리**: Claude CLI의 `claude mcp install` 명령어로 자동 설정
-
-### 개발 런타임
-- **Node.js**: Volta로 프로젝트별 자동 관리
-- **Python**: 3.11
-- **Shell**: Zsh + Oh My Zsh
-- **Volta**: Node.js 버전 관리자
-
-### 인프라 서비스
-- **PostgreSQL**: 5432 포트
-- **Redis**: 6379 포트  
-- **Prometheus**: 9090 포트 (메트릭 수집)
-- **Grafana**: 3010 포트 (모니터링 대시보드)
-
-## 🔧 환경 구성
-
-### DevContainer 설정
-- **OS**: Ubuntu 22.04 LTS
-- **사용자**: developer (uid:1000, gid:1000)
-- **Shell**: Zsh (기본)
-- **권한**: sudo 무패스워드 사용 가능
-
-### 자동 설정 내용
-1. Claude CLI 환경 확인 및 설정
-2. MCP 서버들 자동 설치 (`claude mcp install` 사용)
-3. Git 기본 설정 및 별칭
-4. 개발 도구 및 유틸리티 설치
-5. 인프라 서비스 자동 시작
-6. Volta를 통한 Node.js 버전 관리
-
-## 📁 디렉토리 구조
-
-```
-claude_code_scaffold/
-├── .devcontainer/              # DevContainer 설정
-│   ├── devcontainer.json      # VS Code 컨테이너 설정
-│   ├── Dockerfile             # 컨테이너 이미지 정의 (Volta 포함)
-│   └── setup-claude-environment.sh  # 환경 설정 스크립트
-├── config/                    # 인프라 설정
-│   └── prometheus.yml        # Prometheus 설정
-├── workspace/                 # 개발 프로젝트 작업 공간 (Git ignore)
-│   ├── README.md             # 사용법 가이드
-│   └── (개발 프로젝트들...)   # git clone으로 추가
-├── scripts/                   # 관리 스크립트
-├── docker-compose.yml         # 인프라 서비스 정의
-├── .gitignore                # workspace/ 제외
-└── README.md                  # 이 파일
-```
-
-## 🛠️ 트러블슈팅
-
-### 컨테이너 빌드 실패시
-```bash
-# DevContainer 재빌드
-Ctrl+Shift+P → "Dev Containers: Rebuild Container"
-```
-
-### Claude CLI 설치 확인
-```bash
-# 컨테이너 내에서 실행
-claude --version
-which claude
-```
-
-### MCP 서버 상태 확인
-```bash
-# MCP 서버 목록 확인
-claude mcp list
-
-# Claude 설정 파일 확인
-ls -la ~/.claude/
-cat ~/.claude/.claude.json
-
-# Node.js 글로벌 패키지 확인
-npm list -g --depth=0
-```
-
-### 서비스 상태 확인
-```bash
-# 인프라 서비스 상태
-docker-compose ps
-
-# 서비스 로그 확인
-docker-compose logs -f
-
-# 서비스 재시작
-docker-compose restart
-```
-
-## 🔗 서비스 접속 정보
-
-- **Grafana 대시보드**: http://localhost:3010
-  - 계정: admin / admin
-- **Prometheus**: http://localhost:9090
-- **PostgreSQL**: localhost:5432
-  - DB: claude_environment
-  - 사용자: claude_env
-  - 비밀번호: dev_password_change_in_production
-- **Redis**: localhost:6379
-
-## 📝 개발 워크플로우
-
-### 환경 설정 (한 번만)
-1. **프로젝트 시작**: VS Code에서 DevContainer 열기
-2. **환경 검증**: Claude Code CLI 및 MCP 서버 확인
-
-### 실제 개발 작업
-1. **프로젝트 클론**:
-   ```bash
-   cd /workspaces/claude_code_scaffold/workspace
-   git clone https://github.com/username/my-project.git
-   cd my-project
-   ```
-
-2. **자동 환경 설정**: Volta가 프로젝트의 Node.js 버전 자동 적용
-
-3. **Claude Code 개발**: 
-   ```bash
-   npm install
-   claude .  # 또는 현재 디렉토리에서 Claude CLI 사용
-   ```
-
-4. **MCP 서버 관리**: `claude mcp install/uninstall` 명령어로 MCP 서버 추가/제거
-
-5. **모니터링**: Grafana 대시보드에서 메트릭 확인
-
-## 🔄 MCP 서버 관리
-
-### Claude CLI 기반 MCP 관리
-Claude CLI의 내장 MCP 관리 시스템을 사용하여 MCP 서버를 관리합니다.
-
-```bash
-# MCP 서버 설치
-claude mcp install @modelcontextprotocol/server-sequential-thinking
-claude mcp install @upstash/context7-mcp
-claude mcp install @21st-dev/magic
-claude mcp install @playwright/mcp
-
-# 설치된 MCP 서버 목록 확인
-claude mcp list
-
-# MCP 서버 제거
-claude mcp uninstall <server-name>
-
-# Claude 설정 확인
-ls -la ~/.claude/
-cat ~/.claude/.claude.json
-```
-
-### 자동 설정
-- **초기 설치**: DevContainer 빌드 시 기본 MCP 서버들 자동 설치
-- **설정 관리**: Claude CLI가 `~/.claude/.claude.json`에서 자동 관리
-- **팀 공유**: 필요시 MCP 서버 목록을 팀원들과 공유 가능
-
-### 커스텀 MCP 서버 추가
-```bash
-# 새로운 MCP 서버 설치
-claude mcp install <npm-package-name>
-
-# 로컬 MCP 서버 개발 시
-# ~/.claude/.claude.json 파일을 직접 편집하여 로컬 경로 추가
-```
-
-## ⚡ 성능 최적화
-
-- **컨테이너 이미지**: 최적화된 Ubuntu 22.04 기반
-- **설정 시간**: 3-5분 (최초), 30초 (이후)
-- **리소스 사용량**: 최소화된 서비스 구성
-- **캐싱**: Docker 레이어 캐싱 활용
+- **🎯 원클릭 설정**: Git clone → VS Code 열기 → 3분 완료
+- **🤖 3대 AI 도구**: Claude CLI + Claude Squad + SuperClaude Framework
+- **⚡ 완전 자동화**: MCP 서버 5개 자동 설치 및 설정
+- **🌍 크로스 플랫폼**: Windows, macOS, Linux 완전 지원
+- **🔗 호스트 연동**: 기존 프로젝트 폴더 직접 접근 가능
+- **📊 모니터링**: Grafana + Prometheus 내장
 
 ---
 
-**마지막 업데이트**: 2024-01-30  
-**호환성**: macOS, Windows, Linux (VS Code + Docker 필요)  
-**라이선스**: MIT
+## 📋 **사전 요구사항**
+
+### 필수 소프트웨어
+
+| 소프트웨어 | Windows | macOS | Linux |
+|------------|---------|-------|-------|
+| **VS Code** | [다운로드](https://code.visualstudio.com/) | [다운로드](https://code.visualstudio.com/) | [다운로드](https://code.visualstudio.com/) |
+| **Docker Desktop** | [다운로드](https://www.docker.com/products/docker-desktop) | [다운로드](https://www.docker.com/products/docker-desktop) | `sudo apt install docker.io` |
+| **Dev Containers 확장** | VS Code에서 설치 | VS Code에서 설치 | VS Code에서 설치 |
+
+### VS Code 확장 설치
+1. VS Code 실행
+2. `Ctrl+Shift+X` (macOS: `Cmd+Shift+X`)
+3. "Dev Containers" 검색 및 설치
+
+---
+
+## 🚀 **빠른 시작 가이드**
+
+### 1️⃣ **환경변수 설정 (선택사항)**
+
+OAuth 토큰을 사용하면 완전 자동화가 가능합니다:
+
+**Windows (PowerShell):**
+```powershell
+# 시스템 환경변수에 추가
+[Environment]::SetEnvironmentVariable("CLAUDE_CODE_OAUTH_TOKEN", "your-token-here", "User")
+```
+
+**macOS/Linux (Terminal):**
+```bash
+# ~/.zshrc 또는 ~/.bashrc에 추가
+echo 'export CLAUDE_CODE_OAUTH_TOKEN="your-token-here"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+### 2️⃣ **프로젝트 클론**
+
+```bash
+git clone https://github.com/Choiyos/claude_code_scaffold.git
+cd claude_code_scaffold
+```
+
+### 3️⃣ **DevContainer 실행**
+
+**방법 1: VS Code GUI**
+1. VS Code에서 폴더 열기
+2. 우하단 팝업에서 **"Reopen in Container"** 클릭
+
+**방법 2: 명령 팔레트**
+1. `Ctrl+Shift+P` (macOS: `Cmd+Shift+P`)
+2. **"Dev Containers: Reopen in Container"** 선택
+
+### 4️⃣ **자동 설정 완료 대기**
+- 첫 실행: **3-5분** (Docker 이미지 빌드 + 도구 설치)
+- 이후 실행: **30초** (캐시된 환경 사용)
+
+### 5️⃣ **즉시 사용 시작!**
+
+```bash
+# 🤖 AI 도구들 확인
+claude --help                    # Claude CLI
+cs --help                        # Claude Squad
+sc --help                        # SuperClaude Framework
+
+# 📦 MCP 서버 확인 (자동 설치됨)
+claude mcp list
+
+# 🖥️ 서비스 상태 확인
+docker-compose ps
+
+# 📊 모니터링 대시보드 접속
+# http://localhost:3010 (admin/admin)
+```
+
+---
+
+## 🛠️ **통합된 AI 개발 도구**
+
+### 🎯 **Claude CLI + MCP Servers**
+- **Claude Code CLI**: 최신 버전 자동 설치
+- **자동 MCP 서버 5개**:
+  - `@modelcontextprotocol/server-sequential-thinking` - 복잡한 추론
+  - `@upstash/context7-mcp` - 문서 컨텍스트
+  - `@21st-dev/magic` - UI 컴포넌트 생성
+  - `@executeautomation/playwright-mcp-server` - 브라우저 자동화
+  - `@playwright/mcp` - 공식 Playwright 지원
+
+### 🤝 **Claude Squad**
+- **AI 협업 도구**: 팀 프로젝트 관리
+- **tmux 통합**: 멀티 세션 관리
+- **GitHub CLI**: Git 워크플로우 자동화
+- **별칭**: `cs` 명령어로 간편 사용
+
+### 🚀 **SuperClaude Framework**
+- **고급 AI 자동화**: Python 기반 프레임워크
+- **uv 패키지 관리자**: 초고속 Python 패키지 관리
+- **최소 설치 모드**: 빠른 시작
+- **별칭**: `sc` 명령어로 간편 사용
+
+---
+
+## 📁 **호스트 폴더 접근**
+
+기존 프로젝트를 그대로 사용하세요! 복사나 이동 불필요합니다.
+
+### 자동 마운트된 폴더들:
+```bash
+/host/Documents     # 문서 폴더
+/host/Downloads     # 다운로드 폴더  
+/host/Desktop       # 바탕화면
+/host/dev           # C:\dev (또는 ~/dev)
+```
+
+### 사용 예시:
+```bash
+# 기존 프로젝트로 바로 이동
+cd /host/dev/my-existing-project
+
+# VS Code에서 열기
+code /host/dev/my-existing-project
+
+# AI 도구들 즉시 사용
+claude --help
+cs new session
+sc --help
+```
+
+---
+
+## 💻 **플랫폼별 특화 가이드**
+
+### 🪟 **Windows 사용자**
+
+**필수 설정:**
+- **Docker Desktop** 실행 상태 유지
+- **WSL2** 활성화 (Docker Desktop이 자동 설정)
+
+**권장 폴더 구조:**
+```
+C:\dev\                    # 개발 프로젝트 폴더
+├── project1\
+├── project2\
+└── claude_code_scaffold\  # 이 프로젝트
+```
+
+**접근 방법:**
+```bash
+# DevContainer 내에서
+cd /host/dev/project1      # C:\dev\project1에 접근
+```
+
+### 🍎 **macOS 사용자**
+
+**필수 설정:**
+- **Docker Desktop** 설치 및 실행
+- **Rosetta 2** (Apple Silicon 맥에서 필요시)
+
+**권장 폴더 구조:**
+```
+~/dev/                     # 개발 프로젝트 폴더
+├── project1/
+├── project2/
+└── claude_code_scaffold/  # 이 프로젝트
+```
+
+**접근 방법:**
+```bash
+# DevContainer 내에서
+cd /host/dev/project1      # ~/dev/project1에 접근
+```
+
+### 🐧 **Linux 사용자**
+
+**Docker 설치:**
+```bash
+# Ubuntu/Debian
+sudo apt update
+sudo apt install docker.io docker-compose
+sudo usermod -aG docker $USER
+# 로그아웃 후 재로그인 필요
+```
+
+**권장 폴더 구조:**
+```
+~/dev/                     # 개발 프로젝트 폴더
+├── project1/
+├── project2/
+└── claude_code_scaffold/  # 이 프로젝트
+```
+
+---
+
+## ⚙️ **고급 설정**
+
+### 🔧 **devcontainer.json 커스터마이징**
+
+추가 폴더 마운트:
+```json
+{
+  "mounts": [
+    "source=/your/custom/path,target=/host/custom,type=bind,consistency=cached"
+  ]
+}
+```
+
+### 🎨 **개발 도구 추가**
+
+`setup-claude-environment.sh`에 원하는 도구 추가:
+```bash
+# 예: Go 언어 설치
+install_golang() {
+    log_info "Go 설치 중..."
+    wget -c https://golang.org/dl/go1.21.0.linux-amd64.tar.gz
+    sudo tar -C /usr/local -xzf go1.21.0.linux-amd64.tar.gz
+    echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.zshrc
+}
+```
+
+---
+
+## 🔍 **트러블슈팅**
+
+### ❌ **일반적인 문제들**
+
+**1. Docker 데몬이 실행되지 않음**
+```bash
+# Windows/macOS: Docker Desktop 실행
+# Linux: sudo systemctl start docker
+```
+
+**2. DevContainer 빌드 실패**
+```bash
+# VS Code에서
+Ctrl+Shift+P → "Dev Containers: Rebuild Container"
+```
+
+**3. 권한 문제 (Linux)**
+```bash
+sudo usermod -aG docker $USER
+# 로그아웃 후 재로그인
+```
+
+### 🔧 **상태 확인 명령어**
+
+```bash
+# 전체 도구 상태 확인
+claude --version && cs --help && sc --help
+
+# MCP 서버 상태
+claude mcp list
+
+# 서비스 상태
+docker-compose ps
+
+# 로그 확인
+docker-compose logs -f
+```
+
+---
+
+## 📊 **내장 서비스**
+
+### 접속 정보:
+- **📈 Grafana 대시보드**: http://localhost:3010 (admin/admin)
+- **📊 Prometheus**: http://localhost:9090
+- **🗄️ PostgreSQL**: localhost:5432
+- **🔄 Redis**: localhost:6379
+
+### 모니터링:
+- **시스템 메트릭**: CPU, 메모리, 디스크 사용량
+- **서비스 상태**: Docker 컨테이너 모니터링
+- **개발 메트릭**: 빌드 시간, 테스트 결과
+
+---
+
+## 🤝 **기여하기**
+
+1. **Fork** 이 리포지토리
+2. **Feature 브랜치** 생성 (`git checkout -b feature/amazing-feature`)
+3. **변경사항 커밋** (`git commit -m 'Add some amazing feature'`)
+4. **브랜치에 Push** (`git push origin feature/amazing-feature`)
+5. **Pull Request** 생성
+
+---
+
+## 📜 **라이선스**
+
+이 프로젝트는 MIT 라이선스를 따릅니다. 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
+
+---
+
+## 🙋‍♂️ **지원 및 문의**
+
+- **Issues**: [GitHub Issues](https://github.com/Choiyos/claude_code_scaffold/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/Choiyos/claude_code_scaffold/discussions)
+- **Wiki**: [프로젝트 Wiki](https://github.com/Choiyos/claude_code_scaffold/wiki)
+
+---
+
+## 🎉 **성공 사례**
+
+> *"3분 만에 팀 전체가 동일한 AI 개발환경을 구축했습니다!"*  
+> *"기존 프로젝트를 그대로 사용하면서 최신 AI 도구들을 바로 적용할 수 있어서 너무 좋아요!"*  
+> *"Claude CLI + Claude Squad + SuperClaude Framework 조합이 개발 생산성을 10배 향상시켰습니다!"*
+
+---
+
+<div align="center">
+
+**⭐ 이 프로젝트가 도움이 되셨다면 Star를 눌러주세요! ⭐**
+
+[![Star History Chart](https://api.star-history.com/svg?repos=Choiyos/claude_code_scaffold&type=Date)](https://star-history.com/#Choiyos/claude_code_scaffold&Date)
+
+**🚀 Made with ❤️ by AI Development Community**
+
+</div>
