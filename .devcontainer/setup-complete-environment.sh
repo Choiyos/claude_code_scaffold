@@ -45,35 +45,29 @@ echo "  PWD=$PWD"
 
 if [[ -n "$CLAUDE_HOST_PROJECTS" ]]; then
     echo "✅ CLAUDE_HOST_PROJECTS 환경변수가 설정되어 있습니다: $CLAUDE_HOST_PROJECTS"
-    if [[ -d "$CLAUDE_HOST_PROJECTS" ]]; then
-        echo "✅ 호스트 경로가 존재합니다: $CLAUDE_HOST_PROJECTS"
+    
+    # Docker 마운트로 /host/projects가 이미 연결되어 있는지 확인
+    if [[ -d "/host/projects" ]]; then
+        echo "✅ 호스트 폴더가 /host/projects에 마운트되었습니다"
         
-        # /host 디렉토리 생성
-        echo "📁 /host 디렉토리 생성 중..."
-        sudo mkdir -p /host
+        # 마운트된 폴더 권한 설정
+        sudo chown -R developer:developer /host/projects 2>/dev/null || true
         
-        # 심볼릭 링크 생성
-        echo "🔗 심볼릭 링크 생성 중: /host/projects → $CLAUDE_HOST_PROJECTS"
-        sudo ln -sf "$CLAUDE_HOST_PROJECTS" /host/projects
-        sudo chown -h developer:developer /host/projects
-        
-        echo "✅ 호스트 프로젝트 폴더 연결됨: /host/projects → $CLAUDE_HOST_PROJECTS"
-        if [[ "$(ls -A "$CLAUDE_HOST_PROJECTS" 2>/dev/null)" ]]; then
-            echo "📁 연결된 내용: $(ls "$CLAUDE_HOST_PROJECTS" | head -3 | tr '\n' ' ')..."
+        # 마운트된 폴더 내용 확인
+        if [[ "$(ls -A /host/projects 2>/dev/null)" ]]; then
+            echo "📁 마운트된 내용: $(ls /host/projects | head -3 | tr '\n' ' ')..."
         else
-            echo "📁 연결된 폴더가 비어있습니다"
+            echo "📁 마운트된 폴더가 비어있습니다"
         fi
+        
+        echo "🎉 호스트 프로젝트 폴더 사용 가능: cd /host/projects"
     else
-        echo "❌ 환경변수 경로가 존재하지 않습니다: $CLAUDE_HOST_PROJECTS"
-        echo "🔍 경로 상세 정보:"
-        echo "  - 설정된 경로: '$CLAUDE_HOST_PROJECTS'"
-        echo "  - 경로 길이: ${#CLAUDE_HOST_PROJECTS}"
-        echo "  - ls 결과: $(ls -la "$CLAUDE_HOST_PROJECTS" 2>&1 || echo "경로 접근 불가")"
-        echo ""
+        echo "❌ Docker 마운트가 설정되지 않았습니다"
         echo "💡 해결 방법:"
-        echo "  1. 호스트에서 폴더 생성: mkdir -p '$CLAUDE_HOST_PROJECTS'"
-        echo "  2. 경로 확인: echo \$CLAUDE_HOST_PROJECTS"
-        echo "  3. DevContainer 재빌드"
+        echo "  1. DevContainer를 완전히 재빌드하세요"
+        echo "  2. Ctrl+Shift+P → 'Dev Containers: Rebuild Container'"
+        echo "  3. 환경변수가 호스트에서 올바르게 설정되어 있는지 확인"
+        echo "     호스트에서: echo \$CLAUDE_HOST_PROJECTS"
     fi
 else
     echo "❌ CLAUDE_HOST_PROJECTS 환경변수가 설정되지 않았습니다"
