@@ -36,10 +36,24 @@ fi
 # 호스트 폴더 연결 설정
 echo "🔧 마지막 단계: 호스트 폴더 연결 설정 중..."
 
+# 환경변수 디버깅 정보
+echo "🔍 환경변수 디버깅:"
+echo "  CLAUDE_HOST_PROJECTS=$CLAUDE_HOST_PROJECTS"
+echo "  USER=$USER"
+echo "  HOME=$HOME"
+echo "  PWD=$PWD"
+
 if [[ -n "$CLAUDE_HOST_PROJECTS" ]]; then
+    echo "✅ CLAUDE_HOST_PROJECTS 환경변수가 설정되어 있습니다: $CLAUDE_HOST_PROJECTS"
     if [[ -d "$CLAUDE_HOST_PROJECTS" ]]; then
+        echo "✅ 호스트 경로가 존재합니다: $CLAUDE_HOST_PROJECTS"
+        
         # /host 디렉토리 생성
+        echo "📁 /host 디렉토리 생성 중..."
         sudo mkdir -p /host
+        
+        # 심볼릭 링크 생성
+        echo "🔗 심볼릭 링크 생성 중: /host/projects → $CLAUDE_HOST_PROJECTS"
         sudo ln -sf "$CLAUDE_HOST_PROJECTS" /host/projects
         sudo chown -h developer:developer /host/projects
         
@@ -50,11 +64,21 @@ if [[ -n "$CLAUDE_HOST_PROJECTS" ]]; then
             echo "📁 연결된 폴더가 비어있습니다"
         fi
     else
-        echo "⚠️  환경변수 경로가 존재하지 않습니다: $CLAUDE_HOST_PROJECTS"
-        echo "💡 호스트에서 폴더를 생성하거나 다른 경로로 설정하세요"
+        echo "❌ 환경변수 경로가 존재하지 않습니다: $CLAUDE_HOST_PROJECTS"
+        echo "🔍 경로 상세 정보:"
+        echo "  - 설정된 경로: '$CLAUDE_HOST_PROJECTS'"
+        echo "  - 경로 길이: ${#CLAUDE_HOST_PROJECTS}"
+        echo "  - ls 결과: $(ls -la "$CLAUDE_HOST_PROJECTS" 2>&1 || echo "경로 접근 불가")"
+        echo ""
+        echo "💡 해결 방법:"
+        echo "  1. 호스트에서 폴더 생성: mkdir -p '$CLAUDE_HOST_PROJECTS'"
+        echo "  2. 경로 확인: echo \$CLAUDE_HOST_PROJECTS"
+        echo "  3. DevContainer 재빌드"
     fi
 else
-    echo "ℹ️  CLAUDE_HOST_PROJECTS 환경변수가 설정되지 않았습니다"
+    echo "❌ CLAUDE_HOST_PROJECTS 환경변수가 설정되지 않았습니다"
+    echo "🔍 현재 환경변수 상태:"
+    echo "  - 모든 환경변수 확인: $(env | grep CLAUDE || echo "CLAUDE 관련 환경변수 없음")"
     echo ""
     echo "📝 호스트 폴더를 연결하려면:"
     echo "   1. 호스트에서 환경변수 설정:"
@@ -65,6 +89,15 @@ else
     echo "      Ctrl+Shift+P → 'Dev Containers: Rebuild Container'"
     echo ""
     echo "💡 지금은 workspace 폴더를 사용하세요: cd workspace"
+fi
+
+# 디버깅 스크립트 실행
+echo ""
+echo "🔍 마운트 상태 디버깅 정보:"
+if [[ -f ".devcontainer/debug-mount.sh" ]]; then
+    bash .devcontainer/debug-mount.sh
+else
+    echo "⚠️  디버깅 스크립트를 찾을 수 없습니다"
 fi
 
 echo ""
