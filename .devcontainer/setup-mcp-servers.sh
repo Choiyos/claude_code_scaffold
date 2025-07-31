@@ -51,12 +51,20 @@ check_claude_auth() {
     
     local auth_output
     if auth_output=$(claude auth status 2>&1); then
-        log_success "✅ Claude CLI 인증 확인됨"
-        log_info "인증 상태: $auth_output"
-        return 0
+        # 인증 메시지 내용을 분석하여 실제 인증 상태 확인
+        if echo "$auth_output" | grep -q "authentication isn't set up yet\|need to authenticate\|auth login"; then
+            log_error "❌ Claude CLI가 인증되지 않았습니다."
+            log_info "인증 상태 메시지: $auth_output"
+            log_info "먼저 다음 명령어로 인증하세요: claude auth login"
+            return 1
+        else
+            log_success "✅ Claude CLI 인증 확인됨"
+            log_info "인증 상태: $auth_output"
+            return 0
+        fi
     else
-        log_error "❌ Claude CLI가 인증되지 않았습니다."
-        log_info "인증 오류 메시지: $auth_output"
+        log_error "❌ Claude CLI 인증 상태 확인 실패"
+        log_info "오류 메시지: $auth_output"
         log_info "먼저 다음 명령어로 인증하세요: claude auth login"
         return 1
     fi
@@ -66,19 +74,20 @@ check_claude_auth() {
 add_mcp_servers() {
     log_info "🔧 MCP 서버 등록 시작..."
     
-    local servers=(
-        "@modelcontextprotocol/server-sequential-thinking"  
-        "@upstash/context7-mcp"
-        "@21st-dev/magic"
-        "@playwright/mcp"
+    # MCP 서버 배열: [패키지명]=[실행명령어]
+    declare -A servers=(
+        ["@modelcontextprotocol/server-sequential-thinking"]="npx @modelcontextprotocol/server-sequential-thinking"
+        ["@upstash/context7-mcp"]="npx @upstash/context7-mcp"
+        ["@21st-dev/magic"]="npx @21st-dev/magic"
+        ["@playwright/mcp"]="npx @playwright/mcp"
     )
     
     local success_count=0
     local total_count=${#servers[@]}
     
     log_info "📦 등록할 MCP 서버 목록 ($total_count개):"
-    for server in "${servers[@]}"; do
-        log_info "  - $server"
+    for package in "${!servers[@]}"; do
+        log_info "  - $package → ${servers[$package]}"
     done
     log_info ""
     
@@ -95,35 +104,36 @@ add_mcp_servers() {
     fi
     log_info ""
     
-    for i in "${!servers[@]}"; do
-        local server="${servers[$i]}"
-        local current=$((i + 1))
+    local current=0
+    for package in "${!servers[@]}"; do
+        local command="${servers[$package]}"
+        current=$((current + 1))
         
-        log_info "[$current/$total_count] 🔄 MCP 서버 등록 중: $server"
-        log_info "실행 명령어: claude mcp add \"$server\""
+        log_info "[$current/$total_count] 🔄 MCP 서버 등록 중: $package"
+        log_info "실행 명령어: claude mcp add \"$package\" \"$command\""
         
         # 명령어 실행 및 상세 로그
         local output
         local exit_code
         
         log_info "⏳ 명령어 실행 중... (최대 30초 대기)"
-        if output=$(timeout 30 claude mcp add "$server" 2>&1); then
+        if output=$(timeout 30 claude mcp add "$package" "$command" 2>&1); then
             exit_code=0
         else
             exit_code=$?
         fi
         
         if [ $exit_code -eq 0 ]; then
-            log_success "✅ [$current/$total_count] $server 등록 완료"
+            log_success "✅ [$current/$total_count] $package 등록 완료"
             log_info "출력: $output"
             ((success_count++))
         elif [ $exit_code -eq 124 ]; then
-            log_error "⏰ [$current/$total_count] $server 등록 타임아웃 (30초)"
+            log_error "⏰ [$current/$total_count] $package 등록 타임아웃 (30초)"
             log_info "출력: $output"
         else
-            log_warning "⚠️  [$current/$total_count] $server 등록 실패 (exit code: $exit_code)"
+            log_warning "⚠️  [$current/$total_count] $package 등록 실패 (exit code: $exit_code)"
             log_info "오류 출력: $output"
-            log_info "💡 수동으로 등록하려면: claude mcp add \"$server\""
+            log_info "💡 수동으로 등록하려면: claude mcp add \"$package\" \"$command\""
         fi
         
         log_info ""
