@@ -89,7 +89,7 @@ install_mcp_servers() {
         return 1
     fi
     
-    # MCP 서버들 설치
+    # MCP 서버들 설치 (claude mcp add 사용)
     local servers=(
         "@modelcontextprotocol/server-sequential-thinking"  
         "@upstash/context7-mcp"
@@ -98,14 +98,14 @@ install_mcp_servers() {
     )
     
     for server in "${servers[@]}"; do
-        log_info "Claude MCP 설치 중: $server"
-        if claude mcp install "$server"; then
-            log_success "$server MCP 설치 완료"
+        log_info "Claude MCP 추가 중: $server"
+        if claude mcp add "$server"; then
+            log_success "$server MCP 추가 완료"
         else
-            log_warning "$server MCP 설치 실패 - 수동 설치가 필요할 수 있습니다."
+            log_warning "$server MCP 추가 실패 - npm으로 패키지 설치"
             
-            # 실패 시 npm으로 패키지라도 설치
-            log_info "npm으로 패키지 설치 시도: $server"
+            # 실패 시 npm으로 패키지 설치
+            log_info "npm으로 패키지 설치: $server"
             npm install -g "$server" 2>/dev/null || true
         fi
     done
@@ -377,12 +377,20 @@ main() {
     
     log_success "🎉 Claude Code 개발환경 설정 완료!"
     log_info ""
+    log_info "🔐 중요: Claude CLI 초기 인증이 필요합니다!"
+    log_info ""
     log_info "다음 단계:"
     log_info "  1. 터미널 재시작: exec zsh"
-    log_info "  2. Claude CLI 사용: claude --help"
-    log_info "  3. MCP 서버 확인: claude mcp list"
-    log_info "  4. 서비스 상태 확인: docker-compose ps"
-    log_info "  5. Grafana 대시보드: http://localhost:3010"
+    log_info "  2. Claude CLI 인증: claude auth login"
+    log_info "     → 브라우저가 열리면 Claude 계정으로 로그인"
+    log_info "     → 인증 완료 후 터미널로 돌아옴"
+    log_info "  3. Claude CLI 사용: claude --help"
+    log_info "  4. MCP 서버 확인: claude mcp list"
+    log_info "  5. 서비스 상태 확인: docker-compose ps"
+    log_info "  6. Grafana 대시보드: http://localhost:3010"
+    log_info ""
+    log_info "⚠️  인증 없이는 Claude CLI가 작동하지 않습니다"
+    log_info "💡 인증 후 MCP 서버들이 자동으로 연결됩니다"
     log_info ""
     log_info "문제가 발생하면 다음 명령어로 로그를 확인하세요:"
     log_info "  docker-compose logs -f"
