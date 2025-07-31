@@ -77,6 +77,41 @@ check_claude_auth() {
     fi
 }
 
+# MCP 패키지 설치
+install_mcp_packages() {
+    log_info "📦 MCP 패키지 설치 중..."
+    
+    local packages=(
+        "@modelcontextprotocol/server-sequential-thinking"
+        "@upstash/context7-mcp"
+        "@21st-dev/magic"
+        "@playwright/mcp"
+    )
+    
+    local install_success=0
+    local total_packages=${#packages[@]}
+    
+    i=0
+    while [ $i -lt $total_packages ]; do
+        local package="${packages[$i]}"
+        local current=$((i + 1))
+        
+        log_info "[$current/$total_packages] 📦 설치 중: $package"
+        
+        if npm install -g "$package" >/dev/null 2>&1; then
+            log_success "✅ $package 설치 완료"
+            ((install_success++))
+        else
+            log_warning "⚠️  $package 설치 실패 - 계속 진행"
+        fi
+        
+        i=$((i + 1))
+    done
+    
+    log_info "📊 패키지 설치 결과: $install_success/$total_packages 성공"
+    log_info ""
+}
+
 # MCP 서버 등록
 add_mcp_servers() {
     log_info "🔧 MCP 서버 등록 시작..."
@@ -102,7 +137,12 @@ add_mcp_servers() {
     log_info "📦 등록할 MCP 서버 목록 ($total_count개):"
     i=0
     while [ $i -lt $total_count ]; do
-        log_info "  - ${server_names[$i]} → ${server_commands[$i]}"
+        # 빈 이름 건너뛰기
+        if [ -n "${server_names[$i]}" ]; then
+            log_info "  - ${server_names[$i]} → ${server_commands[$i]}"
+        else
+            log_info "  - [빈 서버 이름 건너뜀] (인덱스: $i)"
+        fi
         i=$((i + 1))
     done
     log_info ""
@@ -122,12 +162,20 @@ add_mcp_servers() {
     
     # 서버 등록 루프
     i=0
+    local registered=0
     while [ $i -lt $total_count ]; do
         local server_name="${server_names[$i]}"
         local command="${server_commands[$i]}"
-        local current=$((i + 1))
         
-        log_info "[$current/$total_count] 🔄 MCP 서버 등록 중: $server_name"
+        # 빈 이름 건너뛰기
+        if [ -z "$server_name" ]; then
+            log_info "[건너뜀] 빈 서버 이름 (인덱스: $i)"
+            i=$((i + 1))
+            continue
+        fi
+        
+        registered=$((registered + 1))
+        log_info "[$registered/?] 🔄 MCP 서버 등록 중: $server_name"
         log_info "실행 명령어: claude mcp add \"$server_name\" \"$command\""
         
         # 명령어 실행 및 상세 로그
@@ -241,13 +289,17 @@ main() {
     fi
     log_info ""
     
+    # MCP 패키지 설치
+    log_info "📦 2단계: MCP 패키지 설치"
+    install_mcp_packages
+    
     # MCP 서버 등록
-    log_info "🔧 2단계: MCP 서버 등록"
+    log_info "🔧 3단계: MCP 서버 등록"
     add_mcp_servers
     log_info ""
     
     # 등록 결과 확인
-    log_info "📋 3단계: 등록 결과 확인"
+    log_info "📋 4단계: 등록 결과 확인"
     verify_mcp_servers
     log_info ""
     
