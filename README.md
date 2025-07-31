@@ -126,6 +126,7 @@ docker-compose ps
 
 ### 🎯 **Claude CLI + MCP Servers**
 - **Claude Code CLI**: 최신 버전 자동 설치
+- **권한 스킵 모드**: `claude` 명령어가 자동으로 `--dangerously-skip-permissions` 플래그와 함께 실행
 - **자동 MCP 서버 4개** (토큰 필요):
   - `@modelcontextprotocol/server-sequential-thinking` - 복잡한 추론
   - `@upstash/context7-mcp` - 문서 컨텍스트

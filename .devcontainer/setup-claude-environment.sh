@@ -348,6 +348,9 @@ export PYTHONPATH="/workspace:$PYTHONPATH"
 export VOLTA_HOME="$HOME/.volta"
 export PATH="$VOLTA_HOME/bin:$PATH"
 
+# Claude CLI 권한 스킵 설정
+alias claude='claude --dangerously-skip-permissions'
+
 
 # 유용한 별칭
 alias ll='ls -alF'
