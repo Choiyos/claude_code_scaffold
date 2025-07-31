@@ -100,8 +100,10 @@ add_mcp_servers() {
     local total_count=${#server_packages[@]}
     
     log_info "📦 등록할 MCP 서버 목록 ($total_count개):"
-    for i in "${!server_packages[@]}"; do
+    i=0
+    while [ $i -lt $total_count ]; do
         log_info "  - ${server_packages[$i]} → ${server_commands[$i]}"
+        i=$((i + 1))
     done
     log_info ""
     
@@ -119,7 +121,8 @@ add_mcp_servers() {
     log_info ""
     
     # 서버 등록 루프
-    for i in "${!server_packages[@]}"; do
+    i=0
+    while [ $i -lt $total_count ]; do
         local package="${server_packages[$i]}"
         local command="${server_commands[$i]}"
         local current=$((i + 1))
@@ -152,6 +155,7 @@ add_mcp_servers() {
         fi
         
         log_info ""
+        i=$((i + 1))
     done
     
     log_info "📊 MCP 서버 등록 결과: $success_count/$total_count 성공"
