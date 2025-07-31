@@ -45,26 +45,22 @@ echo "  PWD=$PWD"
 
 if [[ -n "$CLAUDE_HOST_PROJECTS" ]]; then
     echo "✅ CLAUDE_HOST_PROJECTS 환경변수가 설정되어 있습니다: $CLAUDE_HOST_PROJECTS"
-    echo "💡 현재 DevContainer는 마운트 대신 심볼릭 링크 방식을 사용합니다"
-    
-    # /host 디렉토리 생성
-    sudo mkdir -p /host
-    
-    # 호스트 경로가 컨테이너 내부에서 접근 가능한지 확인
-    # (실제로는 접근 불가능하지만, 사용자에게 명확한 안내 제공)
-    echo "🔍 호스트 경로 접근성 확인 중..."
-    echo "ℹ️  DevContainer는 격리된 환경이므로 호스트 경로에 직접 접근할 수 없습니다"
+    echo "💡 현재는 workspace 폴더 사용을 권장합니다"
     echo ""
-    echo "📁 권장 사용 방법:"
-    echo "  1. workspace 폴더 사용:"
+    echo "📁 권장 워크플로우:"
+    echo "  1. workspace 폴더에서 작업:"
     echo "     cd workspace"
-    echo "     git clone [your-project-url]"
+    echo "     git clone https://github.com/your-username/your-project.git"
+    echo "     cd your-project"
     echo ""
-    echo "  2. 또는 VS Code에서 'File > Open Folder'로 기존 프로젝트 열기"
+    echo "  2. 기존 프로젝트가 있다면:"
+    echo "     - VS Code에서 'File > Open Folder'로 해당 프로젝트 열기"
+    echo "     - 해당 프로젝트 폴더에서 DevContainer 실행"
     echo ""
-    echo "💡 향후 업데이트:"
-    echo "  - Docker 볼륨 마운트 방식으로 호스트 폴더 연결 기능 추가 예정"
-    echo "  - 현재는 Git clone 방식을 권장합니다"
+    echo "💡 이 방식의 장점:"
+    echo "  - 마운트 에러 없음"
+    echo "  - 모든 플랫폼에서 동일한 경험"
+    echo "  - Git 기반 협업에 최적화"
 else
     echo "❌ CLAUDE_HOST_PROJECTS 환경변수가 설정되지 않았습니다"
     echo "🔍 현재 환경변수 상태:"
@@ -103,3 +99,42 @@ if [[ -L "/host/projects" ]]; then
 fi
 echo "  - 워크스페이스: cd workspace"
 echo ""
+
+# Claude Squad PATH 문제 해결 (Windows DevContainer)
+echo "🔧 Claude Squad PATH 설정 확인 중..."
+if ! command -v cs &> /dev/null; then
+    echo "⚠️  Claude Squad 'cs' 명령어를 찾을 수 없습니다"
+    echo "🔍 Claude Squad 설치 위치 검색 중..."
+    
+    # 가능한 위치들 검색
+    POSSIBLE_LOCATIONS=(
+        "/usr/local/bin/cs"
+        "/usr/local/bin/claude-squad"
+        "/home/developer/.local/bin/cs"
+        "/home/developer/.local/bin/claude-squad"
+        "/opt/cs"
+        "/opt/claude-squad"
+    )
+    
+    for location in "${POSSIBLE_LOCATIONS[@]}"; do
+        if [[ -f "$location" ]]; then
+            echo "✅ Claude Squad 발견: $location"
+            # 심볼릭 링크 생성
+            sudo ln -sf "$location" /usr/local/bin/cs 2>/dev/null || true
+            echo "🔗 /usr/local/bin/cs 심볼릭 링크 생성"
+            break
+        fi
+    done
+    
+    # 다시 확인
+    if command -v cs &> /dev/null; then
+        echo "✅ Claude Squad 'cs' 명령어 사용 가능!"
+    else
+        echo "⚠️  Claude Squad PATH 문제가 지속됩니다"
+        echo "💡 수동 해결 방법:"
+        echo "   exec zsh  # 터미널 재시작"
+        echo "   cs --help # 다시 시도"
+    fi
+else
+    echo "✅ Claude Squad 'cs' 명령어 정상 작동"
+fi

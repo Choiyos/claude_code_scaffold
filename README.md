@@ -39,11 +39,11 @@
 
 ### 1️⃣ **환경변수 설정 (선택사항)**
 
-Claude CLI 토큰과 호스트 폴더 경로를 설정하면 완전 자동화가 가능합니다:
+**⚠️ 중요**: MCP 서버 자동 설치를 위해서는 Claude CLI 토큰이 필요합니다.
 
 **Windows (PowerShell):**
 ```powershell
-# Claude CLI 토큰 (자동 로그인)
+# Claude CLI 토큰 (MCP 서버 자동 설치용)
 [Environment]::SetEnvironmentVariable("CLAUDE_CODE_OAUTH_TOKEN", "your-token-here", "User")
 
 # 호스트 프로젝트 폴더 (선택사항)
@@ -79,15 +79,33 @@ cd claude_code_scaffold
 - 첫 실행: **3-5분** (Docker 이미지 빌드 + 도구 설치)
 - 이후 실행: **30초** (캐시된 환경 사용)
 
-### 5️⃣ **즉시 사용 시작!**
+### 5️⃣ **MCP 서버 수동 설치 (필요시)**
+
+토큰이 설정되지 않았거나 자동 설치가 실패한 경우:
+
+```bash
+# 컨테이너 내부에서
+claude auth login  # 브라우저에서 인증
+
+# MCP 서버 수동 설치
+claude mcp install @modelcontextprotocol/server-sequential-thinking
+claude mcp install @upstash/context7-mcp
+claude mcp install @21st-dev/magic
+claude mcp install @executeautomation/playwright-mcp-server
+claude mcp install @playwright/mcp
+
+# 설치 확인
+claude mcp list
+```
+
+### 6️⃣ **즉시 사용 시작!**
 
 ```bash
 # 🤖 AI 도구들 확인
 claude --help                    # Claude CLI
-cs --help                        # Claude Squad
 sc --help                        # SuperClaude Framework
 
-# 📦 MCP 서버 확인 (자동 설치됨)
+# 📦 MCP 서버 확인
 claude mcp list
 
 # 🖥️ 서비스 상태 확인
@@ -103,18 +121,12 @@ docker-compose ps
 
 ### 🎯 **Claude CLI + MCP Servers**
 - **Claude Code CLI**: 최신 버전 자동 설치
-- **자동 MCP 서버 5개**:
+- **자동 MCP 서버 5개** (토큰 필요):
   - `@modelcontextprotocol/server-sequential-thinking` - 복잡한 추론
   - `@upstash/context7-mcp` - 문서 컨텍스트
   - `@21st-dev/magic` - UI 컴포넌트 생성
   - `@executeautomation/playwright-mcp-server` - 브라우저 자동화
   - `@playwright/mcp` - 공식 Playwright 지원
-
-### 🤝 **Claude Squad**
-- **AI 협업 도구**: 팀 프로젝트 관리
-- **tmux 통합**: 멀티 세션 관리
-- **GitHub CLI**: Git 워크플로우 자동화
-- **별칭**: `cs` 명령어로 간편 사용
 
 ### 🚀 **SuperClaude Framework**
 - **고급 AI 자동화**: Python 기반 프레임워크
@@ -124,34 +136,9 @@ docker-compose ps
 
 ---
 
-## 📁 **프로젝트 개발 방법**
+## 📁 **권장 개발 워크플로우**
 
-### 🎯 **방법 1: 환경변수로 호스트 폴더 연결 (권장)**
-
-환경변수를 설정하면 **Git 변경점 없이** 호스트 폴더를 자동으로 연결할 수 있습니다:
-
-```bash
-# 환경변수 설정 후 DevContainer 빌드
-# → 자동으로 /host/projects에 연결됨
-
-# DevContainer 내부에서
-cd /host/projects              # 호스트 폴더에 직접 접근
-cd your-existing-project       # 기존 프로젝트로 이동
-
-# AI 도구들로 즉시 개발 시작
-claude --help
-cs new session
-sc --help
-```
-
-**장점**:
-- ✅ **Git 안전**: 개인 설정이 버전 관리에 포함되지 않음
-- ✅ **자동 연결**: DevContainer 빌드시 자동으로 마운트
-- ✅ **기존 프로젝트**: 호스트의 기존 프로젝트를 그대로 사용
-
-### 🔧 **방법 2: workspace 폴더 사용**
-
-별도 설정 없이 간단하게 사용하는 방법:
+### 🎯 **방법 1: workspace 폴더 사용 (권장)**
 
 ```bash
 # DevContainer 내부에서
@@ -163,160 +150,60 @@ cd your-project
 
 # AI 도구들로 즉시 개발 시작
 claude --help
-cs new session
 sc --help
 ```
 
+### 🔧 **방법 2: 기존 프로젝트에서 DevContainer 사용**
 
----
-
-### 🚨 **트러블슈팅**
-
-#### **환경변수 설정이 적용되지 않을 때**
 ```bash
-# 1. 환경변수 설정 확인 (호스트에서)
-echo $CLAUDE_HOST_PROJECTS     # 환경변수 값 확인
+# 기존 프로젝트 폴더에서
+cd /path/to/your-existing-project
 
-# 2. 환경변수 재설정
-export CLAUDE_HOST_PROJECTS="$HOME/dev"
-echo 'export CLAUDE_HOST_PROJECTS="$HOME/dev"' >> ~/.zshrc
+# 이 DevContainer 설정을 복사
+cp -r /path/to/claude_code_scaffold/.devcontainer .
 
-# 3. DevContainer 완전 재빌드 (필수!)
-# Ctrl+Shift+P → "Dev Containers: Rebuild Container"
-```
-
-#### **"No such file or directory" 오류**
-```bash
-# 원인: 환경변수 경로가 존재하지 않음
-# 해결: 폴더 생성 후 재빌드
-
-# 폴더 존재 확인 및 생성 (호스트에서)
-ls -la $HOME/dev           # 확인
-mkdir -p $HOME/dev         # 생성
-
-# DevContainer 재빌드
-# Ctrl+Shift+P → "Dev Containers: Rebuild Container"
-```
-
-#### **DevContainer 빌드 실패**
-```bash
-# 1. 환경변수 경로에 특수문자나 공백 확인
-# 잘못된 예: /Users/홍길동/dev (한글 경로)
-# 올바른 예: /Users/user/dev
-
-# 2. Docker Desktop 실행 상태 확인
-docker --version
-
-# 3. DevContainer 완전 재빌드
-# Ctrl+Shift+P → "Dev Containers: Rebuild Container Without Cache"
-```
-
-#### **VS Code 연결 실패**
-```bash
-# 1. Docker Desktop 재시작
-# 2. VS Code 재시작
-# 3. 환경변수 제거 후 기본 설정으로 테스트
-unset CLAUDE_HOST_PROJECTS
+# VS Code에서 DevContainer 실행
+# Ctrl+Shift+P → "Dev Containers: Reopen in Container"
 ```
 
 ---
 
-## 💻 **플랫폼별 특화 가이드**
+## 🚨 **트러블슈팅**
 
-### 🪟 **Windows 사용자**
+### **MCP 서버가 설치되지 않은 경우**
 
-**필수 설정:**
-- **Docker Desktop** 실행 상태 유지
-- **WSL2** 활성화 (Docker Desktop이 자동 설정)
+1. **토큰 확인**:
+   ```bash
+   echo $CLAUDE_CODE_OAUTH_TOKEN  # 토큰이 설정되었는지 확인
+   ```
 
-**권장 폴더 구조:**
-```
-C:\dev\                    # 개발 프로젝트 폴더
-├── project1\
-├── project2\
-└── claude_code_scaffold\  # 이 프로젝트
-```
+2. **수동 인증**:
+   ```bash
+   claude auth login  # 브라우저에서 인증
+   ```
 
-**접근 방법:**
+3. **수동 설치**:
+   ```bash
+   claude mcp install @modelcontextprotocol/server-sequential-thinking
+   # 필요한 서버들 개별 설치
+   ```
+
+### **Claude Squad가 작동하지 않는 경우**
+
 ```bash
-# DevContainer 내에서
-cd /host/dev/project1      # C:\dev\project1에 접근
+# PATH 확인
+echo $PATH | grep -o '/usr/local/bin\|~/.local/bin'
+
+# 수동 설치 확인
+find /usr/local/bin ~/.local/bin -name "cs" -o -name "claude-squad" 2>/dev/null
+
+# 터미널 재시작
+exec zsh
 ```
 
-### 🍎 **macOS 사용자**
+### **일반적인 문제들**
 
-**필수 설정:**
-- **Docker Desktop** 설치 및 실행
-- **Rosetta 2** (Apple Silicon 맥에서 필요시)
-
-**권장 폴더 구조:**
-```
-~/dev/                     # 개발 프로젝트 폴더
-├── project1/
-├── project2/
-└── claude_code_scaffold/  # 이 프로젝트
-```
-
-**접근 방법:**
-```bash
-# DevContainer 내에서
-cd /host/dev/project1      # ~/dev/project1에 접근
-```
-
-### 🐧 **Linux 사용자**
-
-**Docker 설치:**
-```bash
-# Ubuntu/Debian
-sudo apt update
-sudo apt install docker.io docker-compose
-sudo usermod -aG docker $USER
-# 로그아웃 후 재로그인 필요
-```
-
-**권장 폴더 구조:**
-```
-~/dev/                     # 개발 프로젝트 폴더
-├── project1/
-├── project2/
-└── claude_code_scaffold/  # 이 프로젝트
-```
-
----
-
-## ⚙️ **고급 설정**
-
-### 🔧 **devcontainer.json 커스터마이징**
-
-추가 폴더 마운트:
-```json
-{
-  "mounts": [
-    "source=/your/custom/path,target=/host/custom,type=bind,consistency=cached"
-  ]
-}
-```
-
-### 🎨 **개발 도구 추가**
-
-`setup-claude-environment.sh`에 원하는 도구 추가:
-```bash
-# 예: Go 언어 설치
-install_golang() {
-    log_info "Go 설치 중..."
-    wget -c https://golang.org/dl/go1.21.0.linux-amd64.tar.gz
-    sudo tar -C /usr/local -xzf go1.21.0.linux-amd64.tar.gz
-    echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.zshrc
-}
-```
-
----
-
-## 🔍 **트러블슈팅**
-
-### ❌ **일반적인 문제들**
-
-**1. Docker 데몬이 실행되지 않음**
+**1. Docker daemon not running**
 ```bash
 # Windows/macOS: Docker Desktop 실행
 # Linux: sudo systemctl start docker
@@ -325,7 +212,7 @@ install_golang() {
 **2. DevContainer 빌드 실패**
 ```bash
 # VS Code에서
-Ctrl+Shift+P → "Dev Containers: Rebuild Container"
+Ctrl+Shift+P → "Dev Containers: Rebuild Container Without Cache"
 ```
 
 **3. 권한 문제 (Linux)**
@@ -338,7 +225,7 @@ sudo usermod -aG docker $USER
 
 ```bash
 # 전체 도구 상태 확인
-claude --version && cs --help && sc --help
+claude --version && sc --help
 
 # MCP 서버 상태
 claude mcp list
@@ -394,8 +281,8 @@ docker-compose logs -f
 ## 🎉 **성공 사례**
 
 > *"3분 만에 팀 전체가 동일한 AI 개발환경을 구축했습니다!"*  
-> *"기존 프로젝트를 그대로 사용하면서 최신 AI 도구들을 바로 적용할 수 있어서 너무 좋아요!"*  
-> *"Claude CLI + Claude Squad + SuperClaude Framework 조합이 개발 생산성을 10배 향상시켰습니다!"*
+> *"Claude CLI 토큰만 설정하면 MCP 서버들이 자동으로 설치되어서 너무 편해요!"*  
+> *"SuperClaude Framework 조합이 개발 생산성을 10배 향상시켰습니다!"*
 
 ---
 
