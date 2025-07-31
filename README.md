@@ -5,7 +5,7 @@
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-brightgreen)](https://github.com/YOUR_USERNAME/claude_code_scaffold)
 [![VS Code](https://img.shields.io/badge/VS%20Code-DevContainer-blue)](https://code.visualstudio.com/docs/devcontainers/containers)
 [![Docker](https://img.shields.io/badge/Docker-Required-blue)](https://www.docker.com/)
-[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+[![License](https://img.shields.io/badge/License-Apache-green)](LICENSE.md)
 
 ## 🌟 **핵심 특징**
 
@@ -61,7 +61,7 @@ source ~/.zshrc
 ### 2️⃣ **프로젝트 클론**
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/claude_code_scaffold.git
+git clone https://github.com/Choiyos/claude_code_scaffold.git
 cd claude_code_scaffold
 ```
 
@@ -379,7 +379,7 @@ docker-compose logs -f
 
 ## 📜 **라이선스**
 
-이 프로젝트는 MIT 라이선스를 따릅니다. 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
+이 프로젝트는 Apache-2.0 license 라이선스를 따릅니다. 자세한 내용은 [LICENSE](LICENSE.md) 파일을 참조하세요.
 
 ---
 
