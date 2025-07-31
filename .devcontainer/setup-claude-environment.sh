@@ -395,6 +395,13 @@ if command -v claude-squad &> /dev/null; then
     echo "🤖 Claude Squad 사용 가능 (cs 별칭)"
 fi
 
+# SuperClaude Framework 관련 설정
+if command -v uv &> /dev/null && python3 -c "import SuperClaude" 2>/dev/null; then
+    echo "🚀 SuperClaude Framework 사용 가능"
+    # SuperClaude 별칭 추가 (선택사항)
+    alias sc='python3 -m SuperClaude'
+fi
+
 EOF
     
     log_success "Zsh 설정 완료"
@@ -448,6 +455,20 @@ verify_environment() {
         fi
     else
         log_warning "Claude Squad를 찾을 수 없습니다."
+    fi
+    
+    # SuperClaude Framework 확인
+    if command -v uv &> /dev/null; then
+        log_success "uv 패키지 관리자 확인됨: $(uv --version 2>/dev/null || echo 'version check failed')"
+        
+        # SuperClaude 설치 확인
+        if python3 -c "import SuperClaude; print('SuperClaude Framework 설치 확인됨')" 2>/dev/null; then
+            log_success "SuperClaude Framework 설치 확인됨"
+        else
+            log_info "SuperClaude Framework가 아직 설치되지 않았습니다."
+        fi
+    else
+        log_warning "uv 패키지 관리자를 찾을 수 없습니다."
     fi
     
     # Claude 설정 디렉토리 확인
@@ -509,6 +530,38 @@ install_claude_squad() {
     fi
 }
 
+# SuperClaude Framework 설치
+install_superclaude() {
+    log_info "SuperClaude Framework 설치 중..."
+    
+    # uv 패키지 관리자 확인
+    if ! command -v uv &> /dev/null; then
+        log_error "uv 패키지 관리자가 설치되지 않았습니다."
+        return 1
+    fi
+    
+    log_success "uv 패키지 관리자 확인 완료"
+    
+    # SuperClaude 설치 (PyPI 방식)
+    log_info "SuperClaude Framework PyPI에서 설치 중..."
+    if uv add SuperClaude; then
+        log_success "SuperClaude Framework 설치 완료"
+        
+        # SuperClaude 초기화 실행
+        log_info "SuperClaude Framework 초기화 중..."
+        if python3 -m SuperClaude install --minimal; then
+            log_success "SuperClaude Framework 초기화 완료"
+        else
+            log_warning "SuperClaude Framework 초기화 실패, 수동으로 실행하세요"
+            log_info "수동 초기화: python3 -m SuperClaude install"
+        fi
+    else
+        log_error "SuperClaude Framework 설치 실패"
+        log_info "수동 설치: uv add SuperClaude"
+        return 1
+    fi
+}
+
 # 메인 실행 함수
 main() {
     log_info "Claude Code 개발환경 설정 시작"
@@ -521,6 +574,7 @@ main() {
     setup_claude_config
     install_claude_code
     install_claude_squad
+    install_superclaude
     
     # MCP 서버 설치는 별도 스크립트(setup-mcp-servers.sh)에서 자동 실행됩니다
     
@@ -552,6 +606,13 @@ main() {
             log_info "  cs new project      # 새 프로젝트 생성"
             log_info "  cs chat             # Claude Squad 대화"
         fi
+        
+        # SuperClaude Framework 사용법 추가
+        if python3 -c "import SuperClaude" 2>/dev/null; then
+            log_info "🚀 SuperClaude Framework 사용법:"
+            log_info "  python3 -m SuperClaude --help    # SuperClaude 도움말"
+            log_info "  python3 -m SuperClaude install   # 추가 구성요소 설치"
+        fi
     else
         log_info "🔐 Claude CLI 수동 인증이 필요합니다!"
         log_info ""
@@ -572,11 +633,12 @@ main() {
         log_info "   claude mcp add @playwright/mcp"
         log_info ""
         log_info "🚀 설정 완료 후:"
-        log_info "  claude --help            # Claude CLI 도움말"
-        log_info "  claude mcp list          # MCP 서버 목록"
-        log_info "  cs --help                # Claude Squad 도움말"
-        log_info "  docker-compose ps        # 서비스 상태"
-        log_info "  http://localhost:3010    # Grafana 대시보드"
+        log_info "  claude --help                    # Claude CLI 도움말"
+        log_info "  claude mcp list                  # MCP 서버 목록"
+        log_info "  cs --help                        # Claude Squad 도움말"
+        log_info "  python3 -m SuperClaude --help    # SuperClaude Framework"
+        log_info "  docker-compose ps                # 서비스 상태"
+        log_info "  http://localhost:3010            # Grafana 대시보드"
         log_info ""
         log_info "⚠️  인증과 MCP 등록 모두 완료해야 정상 작동합니다"
     fi
