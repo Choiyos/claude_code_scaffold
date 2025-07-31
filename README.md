@@ -39,18 +39,27 @@
 
 ### 1️⃣ **환경변수 설정 (선택사항)**
 
-OAuth 토큰을 사용하면 완전 자동화가 가능합니다:
+OAuth 토큰과 개인 폴더 경로를 설정하면 완전 자동화가 가능합니다:
 
 **Windows (PowerShell):**
 ```powershell
-# 시스템 환경변수에 추가
+# Claude CLI 토큰
 [Environment]::SetEnvironmentVariable("CLAUDE_CODE_OAUTH_TOKEN", "your-token-here", "User")
+
+# 개인 프로젝트 폴더 (선택사항)
+[Environment]::SetEnvironmentVariable("CLAUDE_DEV_PROJECTS", "C:\dev", "User")
+[Environment]::SetEnvironmentVariable("CLAUDE_DEV_DOCUMENTS", "C:\Users\YourName\Documents", "User")
 ```
 
 **macOS/Linux (Terminal):**
 ```bash
 # ~/.zshrc 또는 ~/.bashrc에 추가
 echo 'export CLAUDE_CODE_OAUTH_TOKEN="your-token-here"' >> ~/.zshrc
+
+# 개인 프로젝트 폴더 (선택사항)
+echo 'export CLAUDE_DEV_PROJECTS="$HOME/dev"' >> ~/.zshrc
+echo 'export CLAUDE_DEV_DOCUMENTS="$HOME/Documents"' >> ~/.zshrc
+
 source ~/.zshrc
 ```
 
@@ -147,89 +156,102 @@ sc --help
 
 ### 🔧 **방법 2: 호스트 폴더 마운트**
 
-기존 호스트 폴더를 DevContainer에 직접 연결하려면 추가 설정이 필요합니다.
+기존 호스트 폴더를 DevContainer에 직접 연결하는 방법입니다.
 
-`.devcontainer/devcontainer.json` 파일에 `mounts` 섹션을 추가하세요:
+#### 🎯 **간편 설정 (환경변수 사용)**
 
-#### 🪟 **Windows 사용자**
+환경변수로 개인 폴더 경로를 설정하면 **Git 변경점 없이** 개인화가 가능합니다:
+
+**Windows (PowerShell):**
+```powershell
+# 개인 프로젝트 폴더 경로 설정
+[Environment]::SetEnvironmentVariable("CLAUDE_DEV_PROJECTS", "C:\dev", "User")
+[Environment]::SetEnvironmentVariable("CLAUDE_DEV_DOCUMENTS", "C:\Users\YourName\Documents", "User")
+```
+
+**macOS/Linux (Terminal):**
+```bash
+# ~/.zshrc 또는 ~/.bashrc에 추가
+echo 'export CLAUDE_DEV_PROJECTS="$HOME/dev"' >> ~/.zshrc
+echo 'export CLAUDE_DEV_DOCUMENTS="$HOME/Documents"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+**DevContainer에서 사용:**
+```bash
+# 설정된 폴더에 접근
+cd /host/projects     # CLAUDE_DEV_PROJECTS 경로
+cd /host/Documents    # CLAUDE_DEV_DOCUMENTS 경로
+```
+
+#### 🔧 **고급 설정 (로컬 설정 파일)**
+
+더 복잡한 설정이 필요하다면 개인용 설정 파일을 사용하세요:
+
+**1단계: 예시 파일 복사**
+```bash
+# DevContainer 폴더에서
+cp .devcontainer/devcontainer.local.example.json .devcontainer/devcontainer.local.json
+```
+
+**2단계: 개인 설정 파일 편집**
 ```json
+// .devcontainer/devcontainer.local.json
 {
+  "name": "Claude Code Development Environment (Local)",
   "mounts": [
-    "source=${localEnv:USERPROFILE}\\Documents,target=/host/Documents,type=bind,consistency=cached",
-    "source=${localEnv:USERPROFILE}\\Downloads,target=/host/Downloads,type=bind,consistency=cached",
-    "source=${localEnv:USERPROFILE}\\Desktop,target=/host/Desktop,type=bind,consistency=cached",
-    "source=C:\\dev,target=/host/dev,type=bind,consistency=cached"
+    // Windows 예시
+    "source=C:\\dev,target=/host/projects,type=bind,consistency=cached",
+    "source=C:\\Users\\YourName\\Documents,target=/host/Documents,type=bind,consistency=cached",
+    
+    // macOS/Linux 예시
+    // "source=/Users/yourusername/dev,target=/host/projects,type=bind,consistency=cached",
+    // "source=/Users/yourusername/Documents,target=/host/Documents,type=bind,consistency=cached",
+    
+    // 추가 폴더들
+    "source=${localEnv:HOME}/Downloads,target=/host/Downloads,type=bind,consistency=cached"
   ]
 }
 ```
 
-#### 🍎 **macOS 사용자**
-```json
-{
-  "mounts": [
-    "source=${localEnv:HOME}/Documents,target=/host/Documents,type=bind,consistency=cached",
-    "source=${localEnv:HOME}/Downloads,target=/host/Downloads,type=bind,consistency=cached",
-    "source=${localEnv:HOME}/Desktop,target=/host/Desktop,type=bind,consistency=cached",
-    "source=${localEnv:HOME}/dev,target=/host/dev,type=bind,consistency=cached"
-  ]
-}
+**3단계: DevContainer 재빌드**
+```bash
+# VS Code에서
+# Ctrl+Shift+P → "Dev Containers: Rebuild Container"
 ```
 
-#### 🐧 **Linux 사용자**
-```json
-{
-  "mounts": [
-    "source=${localEnv:HOME}/Documents,target=/host/Documents,type=bind,consistency=cached",
-    "source=${localEnv:HOME}/Downloads,target=/host/Downloads,type=bind,consistency=cached",
-    "source=${localEnv:HOME}/Desktop,target=/host/Desktop,type=bind,consistency=cached",
-    "source=${localEnv:HOME}/dev,target=/host/dev,type=bind,consistency=cached"
-  ]
-}
-```
-
-### 📝 **devcontainer.json 전체 예시**
-
-```json
-{
-  "name": "Claude Code Development Environment",
-  "build": {
-    "dockerfile": "Dockerfile",
-    "context": ".."
-  },
-  "postCreateCommand": "bash .devcontainer/setup-complete-environment.sh",
-  "mounts": [
-    // 여기에 위의 운영체제별 mounts 설정 추가
-  ],
-  "forwardPorts": [3010, 9090, 5432, 6379],
-  "remoteUser": "developer"
-}
-```
+**장점**:
+- ✅ **Git 변경점 없음**: 개인 설정이 버전 관리에 포함되지 않음
+- ✅ **팀 협업**: 각자 다른 폴더 구조 사용 가능
+- ✅ **유연성**: 필요한 폴더만 선택적으로 마운트
 
 ### 🚀 **사용 방법**
 
-설정 후 DevContainer를 재빌드하면:
+설정 후 DevContainer에서:
 
 ```bash
-# 마운트된 폴더들 확인
-ls /host/
+# 환경변수 방식 사용 시
+cd /host/projects       # CLAUDE_DEV_PROJECTS 경로
+cd /host/Documents      # CLAUDE_DEV_DOCUMENTS 경로
 
-# 기존 프로젝트로 바로 이동
-cd /host/dev/my-existing-project
+# 로컬 설정 파일 사용 시
+ls /host/               # 마운트된 폴더들 확인
+cd /host/projects       # 개인 프로젝트 폴더
+cd /host/Documents      # 문서 폴더
 
-# VS Code에서 열기
-code /host/dev/my-existing-project
-
-# AI 도구들 즉시 사용
+# 기존 프로젝트에서 AI 도구 사용
+cd /host/projects/my-existing-project
 claude --help
 cs new session
 sc --help
 ```
 
-### ⚠️ **주의사항**
+### 💡 **설정 팁**
 
-- DevContainer 재빌드 필요: `Ctrl+Shift+P` → "Dev Containers: Rebuild Container"
-- 폴더가 존재하지 않으면 자동 생성됨
-- Windows 경로에서 백슬래시(`\`) 이스케이프 필수
+- **환경변수 방식**: 간단한 개인화, Git 변경점 없음
+- **로컬 설정 파일**: 복잡한 설정, 팀별 다른 구조 지원
+- **DevContainer 재빌드**: 설정 변경 후 항상 필요
+- **폴더 자동 생성**: 존재하지 않는 폴더는 자동으로 생성됨
 
 ---
 

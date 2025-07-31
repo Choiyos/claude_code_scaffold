@@ -43,6 +43,13 @@
       }
     }
   },
+  "mounts": [
+    // 개인 프로젝트 폴더 (환경변수로 커스터마이징 가능)
+    "source=${localEnv:CLAUDE_DEV_PROJECTS:-${localEnv:HOME}/dev},target=/host/projects,type=bind,consistency=cached",
+    
+    // 문서 폴더 (선택적)
+    "source=${localEnv:CLAUDE_DEV_DOCUMENTS:-${localEnv:HOME}/Documents},target=/host/Documents,type=bind,consistency=cached"
+  ],
   "remoteEnv": {
     "ANTHROPIC_API_KEY": "${localEnv:ANTHROPIC_API_KEY}",
     "CLAUDE_CODE_OAUTH_TOKEN": "${localEnv:CLAUDE_CODE_OAUTH_TOKEN}"

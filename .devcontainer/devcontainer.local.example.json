@@ -1,0 +1,37 @@
+{
+  "name": "Claude Code Development Environment (Local Override)",
+  
+  // 개인용 마운트 설정
+  "mounts": [
+    // Windows 사용자 예시
+    "source=C:\\dev,target=/host/projects,type=bind,consistency=cached",
+    "source=C:\\Users\\YourUsername\\Documents,target=/host/Documents,type=bind,consistency=cached",
+    
+    // macOS/Linux 사용자 예시 (위 줄들을 주석처리하고 아래 사용)
+    // "source=/Users/yourusername/dev,target=/host/projects,type=bind,consistency=cached",
+    // "source=/Users/yourusername/Documents,target=/host/Documents,type=bind,consistency=cached",
+    
+    // 추가 폴더 마운트 예시
+    "source=${localEnv:HOME}/Downloads,target=/host/Downloads,type=bind,consistency=cached"
+  ],
+  
+  // 개인용 환경변수 (필요시)
+  "remoteEnv": {
+    // 추가 환경변수들...
+    "MY_CUSTOM_VAR": "custom_value"
+  },
+  
+  // 개인용 VS Code 설정 (필요시)
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // 추가 확장들...
+        "your-favorite-extension"
+      ],
+      "settings": {
+        // 개인 VS Code 설정들...
+        "editor.fontSize": 14
+      }
+    }
+  }
+}

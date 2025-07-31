@@ -20,6 +20,11 @@ Thumbs.db
 .vscode/launch.json
 .idea/
 
+# DevContainer 개인 설정 파일들
+.devcontainer/devcontainer.local.json
+.devcontainer/*.local.json
+.devcontainer/mounts.json
+
 # Node.js
 node_modules/
 npm-debug.log*
