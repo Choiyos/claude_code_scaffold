@@ -26,39 +26,6 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# vibetunnel 설치
-install_vibetunnel() {
-    log_info "vibetunnel 설치 중..."
-    
-    # npm PATH 확인
-    export PATH=~/.npm-global/bin:$PATH
-    
-    # vibetunnel이 이미 설치되어 있는지 확인
-    if command -v vt &> /dev/null; then
-        log_success "vibetunnel이 이미 설치되어 있습니다: $(vt --version)"
-        return 0
-    fi
-    
-    # vibetunnel 설치 (GitHub에서 직접 설치)
-    log_info "npm으로 vibetunnel 설치 중..."
-    if npm install -g https://github.com/amantus-ai/vibetunnel.git; then
-        log_success "vibetunnel 설치 완료"
-        
-        # PATH 새로 로드
-        export PATH=~/.npm-global/bin:$PATH
-        
-        # 설치 확인
-        if command -v vt &> /dev/null; then
-            log_success "vibetunnel 설치 확인됨: $(vt --version)"
-        else
-            log_warning "vibetunnel이 PATH에서 찾을 수 없습니다. 터미널을 재시작해주세요."
-        fi
-    else
-        log_error "vibetunnel 설치 실패"
-        log_info "수동 설치: npm install -g https://github.com/amantus-ai/vibetunnel.git"
-        return 1
-    fi
-}
 
 # Claude Code CLI 설치
 install_claude_code() {
@@ -89,8 +56,6 @@ install_claude_code() {
     # Claude CLI가 이미 설치되어 있는지 확인
     if command -v claude &> /dev/null; then
         log_success "Claude CLI가 이미 설치되어 있습니다: $(claude --version)"
-        # vibetunnel 설치
-        install_vibetunnel
         return 0
     fi
     
@@ -108,9 +73,6 @@ install_claude_code() {
         else
             log_warning "Claude CLI가 PATH에서 찾을 수 없습니다. 터미널을 재시작해주세요."
         fi
-        
-        # vibetunnel 설치
-        install_vibetunnel
     else
         log_error "Claude Code CLI 설치 실패"
         log_info "수동 설치: npm install -g @anthropic-ai/claude-code"
@@ -387,8 +349,8 @@ export PYTHONPATH="/workspace:$PYTHONPATH"
 export VOLTA_HOME="$HOME/.volta"
 export PATH="$VOLTA_HOME/bin:$PATH"
 
-# Claude CLI 권한 스킵 설정 및 vibetunnel 통합
-alias claude='vt --no-auth claude --dangerously-skip-permissions'
+# Claude CLI 권한 스킵 설정
+alias claude='claude --dangerously-skip-permissions'
 
 
 # 유용한 별칭

@@ -51,11 +51,14 @@ RUN sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/inst
 # 사용자를 root로 변경하여 시스템 설정 계속
 USER root
 
-# Node.js 18.x 설치 (직접 설치 방식 - 최적화)
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+# Node.js 20.x 설치 (직접 설치 방식 - 최적화)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# npm 글로벌 설치 준비 (vibetunnel은 런타임에서 설치)
+RUN npm config set unsafe-perm true
 
 # 다시 developer 사용자로 변경
 USER developer

@@ -129,130 +129,66 @@ else
     echo "📚 자세한 정보: https://github.com/modelcontextprotocol"
 fi
 
-# vibetunnel 설치
+# vibetunnel 설치 확인 및 백업 설치
 echo ""
-echo "🌐 vibetunnel 설치 중..."
-install_vibetunnel() {
-    echo "[INFO] vibetunnel 설치 중..."
-    echo "[INFO] npm으로 vibetunnel 설치 중..."
-    
-    # Node.js 버전 확인
-    NODE_VERSION=$(node --version | sed 's/v//')
-    MAJOR_VERSION=$(echo $NODE_VERSION | cut -d. -f1)
-    
-    if [[ $MAJOR_VERSION -lt 20 ]]; then
-        echo "[WARNING] vibetunnel은 Node.js 20+가 필요하지만 현재 버전은 $NODE_VERSION입니다"
-        echo "[INFO] Node.js 20 설치를 시도합니다..."
-        
-        # Node.js 20 설치 시도
-        if command -v curl &> /dev/null; then
-            curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt-get install -y nodejs
-            # 새 버전 확인
-            NEW_NODE_VERSION=$(node --version | sed 's/v//')
-            NEW_MAJOR_VERSION=$(echo $NEW_NODE_VERSION | cut -d. -f1)
-            if [[ $NEW_MAJOR_VERSION -ge 20 ]]; then
-                echo "[SUCCESS] Node.js $NEW_NODE_VERSION 설치 완료!"
-            else
-                echo "[WARNING] Node.js 업그레이드 실패, 강제 설치를 시도합니다..."
-            fi
-        else
-            echo "[INFO] curl을 찾을 수 없어 강제 설치를 시도합니다..."
-        fi
-    fi
-    
-    # 방법 1: npm에서 직접 설치 시도 (npmjs.com에서)
-    if npm install -g vibetunnel --engine-strict=false 2>/dev/null; then
-        echo "[SUCCESS] vibetunnel npm 패키지 설치 성공!"
-        return 0
-    fi
-    
-    
-    echo "[INFO] npm 패키지 설치 실패, GitHub에서 빌드 설치를 시도합니다..."
-    
-    # 방법 2: GitHub에서 클론 후 web 디렉토리에서 빌드
-    TEMP_DIR="/tmp/vibetunnel-build"
-    rm -rf "$TEMP_DIR"
-    
-    echo "[INFO] GitHub 저장소에서 클론 시도..."
-    if git clone --depth 1 https://github.com/amantus-ai/vibetunnel.git "$TEMP_DIR"; then
-        echo "[INFO] vibetunnel 저장소 클론 성공"
-        
-        if [[ -d "$TEMP_DIR/web" ]]; then
-            cd "$TEMP_DIR/web"
-            
-            # package.json 확인
-            if [[ -f "package.json" ]]; then
-                echo "[INFO] web/package.json 발견, 빌드 시작..."
-                
-                # 의존성 설치 (강제 모드, 로그 출력)
-                echo "[INFO] 의존성 설치 중... (시간이 걸릴 수 있습니다)"
-                if npm install --engine-strict=false; then
-                    echo "[INFO] 의존성 설치 완료"
-                    
-                    # 빌드 (로그 출력)
-                    echo "[INFO] npm 패키지 빌드 중..."
-                    if npm run build:npm; then
-                        echo "[INFO] 빌드 완료"
-                        
-                        # 전역 설치
-                        echo "[INFO] 전역 설치 중..."
-                        if npm pack && npm install -g vibetunnel-*.tgz; then
-                            echo "[SUCCESS] vibetunnel 전역 설치 성공!"
-                            cd - > /dev/null
-                            rm -rf "$TEMP_DIR"
-                            return 0
-                        elif npm link; then
-                            echo "[SUCCESS] vibetunnel 심볼릭 링크 설치 성공!"
-                            cd - > /dev/null
-                            rm -rf "$TEMP_DIR"
-                            return 0
-                        fi
-                    else
-                        echo "[WARNING] npm 빌드 실패, 일반 빌드 시도..."
-                        if npm run build; then
-                            echo "[INFO] 일반 빌드 완료, 전역 설치 시도..."
-                            if npm link; then
-                                echo "[SUCCESS] vibetunnel 심볼릭 링크 설치 성공!"
-                                cd - > /dev/null
-                                rm -rf "$TEMP_DIR"
-                                return 0
-                            fi
-                        fi
-                    fi
-                else
-                    echo "[ERROR] 의존성 설치 실패"
-                fi
-            else
-                echo "[ERROR] web/package.json을 찾을 수 없습니다"
-            fi
-            
-            cd - > /dev/null
-        else
-            echo "[ERROR] web 디렉토리를 찾을 수 없습니다"
-        fi
-        
-        rm -rf "$TEMP_DIR"
-    else
-        echo "[ERROR] 저장소 클론 실패"
-    fi
-    
-    echo "[ERROR] vibetunnel 설치 실패"
-    echo "[INFO] 수동 설치: npm install -g https://github.com/amantus-ai/vibetunnel.git"
-    return 1
-}
-
-# vibetunnel 설치 실행
-if install_vibetunnel; then
-    echo "✅ vibetunnel 설치 완료"
-    # 설치 확인
-    if command -v vibetunnel &> /dev/null; then
-        echo "🎉 vibetunnel 명령어 사용 가능: $(vibetunnel --version 2>/dev/null || echo 'installed')"
-    fi
-    if command -v vt &> /dev/null; then
-        echo "🎉 vt 명령어 사용 가능"
-    fi
+echo "🌐 vibetunnel 설치 상태 확인..."
+if command -v vibetunnel &> /dev/null; then
+    echo "✅ vibetunnel 명령어 사용 가능: $(vibetunnel --version 2>/dev/null || echo 'installed')"
+    VT_INSTALLED=true
 else
-    echo "⚠️  vibetunnel 설치 실패, 계속 진행합니다"
+    echo "⚠️  vibetunnel 명령어를 찾을 수 없습니다"
+    echo "🔄 백업 설치를 시도합니다..."
+    VT_INSTALLED=false
+fi
+
+if command -v vt &> /dev/null; then
+    echo "✅ vt 명령어 사용 가능"
+else
+    echo "⚠️  vt 명령어를 찾을 수 없습니다"
+    VT_INSTALLED=false
+fi
+
+# vibetunnel이 설치되지 않은 경우 백업 설치 시도
+if [[ "$VT_INSTALLED" == "false" ]]; then
+    echo ""
+    echo "📦 vibetunnel 백업 설치 시도 중..."
+    
+    # 방법 1: npm에서 직접 설치
+    if npm install -g vibetunnel --engine-strict=false 2>/dev/null; then
+        echo "✅ npm으로 vibetunnel 설치 성공!"
+        VT_INSTALLED=true
+    else
+        echo "❌ npm 설치 실패"
+        
+        # 방법 2: 간단한 클론 & 빌드
+        echo "🔄 GitHub에서 직접 빌드 시도..."
+        TEMP_DIR="/tmp/vt-build"
+        rm -rf "$TEMP_DIR"
+        
+        if git clone --depth 1 https://github.com/amantus-ai/vibetunnel.git "$TEMP_DIR" 2>/dev/null; then
+            cd "$TEMP_DIR/web"
+            if [[ -f "package.json" ]] && npm install --engine-strict=false 2>/dev/null && npm run build:npm 2>/dev/null && npm link 2>/dev/null; then
+                echo "✅ GitHub 빌드로 vibetunnel 설치 성공!"
+                VT_INSTALLED=true
+            fi
+            cd - > /dev/null
+            rm -rf "$TEMP_DIR"
+        fi
+    fi
+    
+    # 최종 확인
+    if [[ "$VT_INSTALLED" == "true" ]]; then
+        echo "🎉 vibetunnel 백업 설치 완료!"
+        if command -v vibetunnel &> /dev/null; then
+            echo "✅ vibetunnel 명령어 확인: $(vibetunnel --version 2>/dev/null || echo 'installed')"
+        fi
+        if command -v vt &> /dev/null; then
+            echo "✅ vt 명령어 확인됨"
+        fi
+    else
+        echo "⚠️  vibetunnel 설치 실패 - 수동 설치 필요"
+        echo "💡 수동 설치: npm install -g vibetunnel"
+    fi
 fi
 
 echo ""
