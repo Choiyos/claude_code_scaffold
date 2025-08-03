@@ -57,11 +57,28 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# npm 글로벌 설치 준비 (vibetunnel은 런타임에서 설치)
-RUN npm config set unsafe-perm true
+# npm 글로벌 설치 준비 (unsafe-perm은 npm 9+에서 제거됨)
+# RUN npm config set unsafe-perm true
+
+# PAM 개발 헤더 설치 (vibetunnel의 선택적 의존성)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpam0g-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # 다시 developer 사용자로 변경
 USER developer
+
+# npm global prefix 설정 (developer 사용자로)
+RUN npm config set prefix ~/.npm-global && \
+    echo 'export PATH="$HOME/.npm-global/bin:$PATH"' >> ~/.bashrc && \
+    echo 'export PATH="$HOME/.npm-global/bin:$PATH"' >> ~/.zshrc
+
+# vibetunnel 설치 (beta.14.1 버전으로 - 안정적)
+ENV PATH="/home/developer/.npm-global/bin:$PATH"
+RUN npm install -g vibetunnel@1.0.0-beta.14.1 || \
+    npm install -g vibetunnel --engine-strict=false || \
+    echo "vibetunnel 설치 실패 - postCreateCommand에서 재시도"
 
 # Volta 설치 (선택사항, Node.js 이미 설치됨)
 RUN curl https://get.volta.sh | bash || true

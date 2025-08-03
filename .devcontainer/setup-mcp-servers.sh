@@ -153,26 +153,37 @@ if [[ "$VT_INSTALLED" == "false" ]]; then
     echo ""
     echo "📦 vibetunnel 백업 설치 시도 중..."
     
-    # 방법 1: npm에서 직접 설치
-    if npm install -g vibetunnel --engine-strict=false 2>/dev/null; then
+    # npm prefix 설정 확인
+    export PATH="$HOME/.npm-global/bin:$PATH"
+    
+    # 방법 1: 특정 버전으로 설치 (가장 안정적)
+    echo "🔄 vibetunnel@1.0.0-beta.14.1 설치 시도..."
+    if npm install -g vibetunnel@1.0.0-beta.14.1 2>&1 | grep -v "authenticate-pam"; then
         echo "✅ npm으로 vibetunnel 설치 성공!"
         VT_INSTALLED=true
     else
-        echo "❌ npm 설치 실패"
-        
-        # 방법 2: 간단한 클론 & 빌드
-        echo "🔄 GitHub에서 직접 빌드 시도..."
-        TEMP_DIR="/tmp/vt-build"
-        rm -rf "$TEMP_DIR"
-        
-        if git clone --depth 1 https://github.com/amantus-ai/vibetunnel.git "$TEMP_DIR" 2>/dev/null; then
-            cd "$TEMP_DIR/web"
-            if [[ -f "package.json" ]] && npm install --engine-strict=false 2>/dev/null && npm run build:npm 2>/dev/null && npm link 2>/dev/null; then
-                echo "✅ GitHub 빌드로 vibetunnel 설치 성공!"
-                VT_INSTALLED=true
-            fi
-            cd - > /dev/null
+        # 방법 2: 최신 버전 설치
+        echo "🔄 최신 버전 설치 시도..."
+        if npm install -g vibetunnel --engine-strict=false 2>&1 | grep -v "authenticate-pam"; then
+            echo "✅ npm으로 vibetunnel 설치 성공!"
+            VT_INSTALLED=true
+        else
+            echo "❌ npm 설치 실패"
+            
+            # 방법 3: GitHub에서 직접 빌드
+            echo "🔄 GitHub에서 직접 빌드 시도..."
+            TEMP_DIR="/tmp/vt-build"
             rm -rf "$TEMP_DIR"
+            
+            if git clone --depth 1 https://github.com/amantus-ai/vibetunnel.git "$TEMP_DIR" 2>/dev/null; then
+                cd "$TEMP_DIR/web"
+                if [[ -f "package.json" ]] && npm install --engine-strict=false 2>/dev/null && npm run build:npm 2>/dev/null && npm link 2>/dev/null; then
+                    echo "✅ GitHub 빌드로 vibetunnel 설치 성공!"
+                    VT_INSTALLED=true
+                fi
+                cd - > /dev/null
+                rm -rf "$TEMP_DIR"
+            fi
         fi
     fi
     
