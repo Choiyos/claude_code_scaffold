@@ -18,9 +18,9 @@ fi
 export PATH="$HOME/.npm-global/bin:$PATH"
 echo "🔄 PATH 새로고침: Claude CLI 경로 추가됨"
 
-# Claude CLI 권한 스킵 설정
-alias claude='claude --dangerously-skip-permissions'
-echo "🔐 Claude CLI 권한 스킵 모드 설정됨"
+# Claude CLI 권한 스킵 설정 및 vibetunnel 통합
+alias claude='vt --no-auth claude --dangerously-skip-permissions'
+echo "🔐 Claude CLI 권한 스킵 모드 및 vibetunnel 통합 설정됨"
 
 # Shell alias 영구 설정
 if bash .devcontainer/setup-shell-aliases.sh; then

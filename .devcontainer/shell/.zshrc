@@ -79,7 +79,7 @@ export PATH="$GOPATH/bin:$PATH"
 # ============================================
 
 # Claude Code aliases
-alias claude="cd $CLAUDE_HOME"
+alias claude='vt --no-auth claude --dangerously-skip-permissions'
 alias cc="claude"
 alias ccs="claude && code ."
 

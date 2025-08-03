@@ -254,7 +254,7 @@ alias free='free -h'
 
 # Quick navigation to common directories
 alias workspace='cd /workspace'
-alias claude='cd ~/.claude'
+alias claude='vt --no-auth claude --dangerously-skip-permissions'
 alias config='cd ~/.claude/config'
 alias logs='cd ~/.claude/logs'
 alias scripts='cd ~/.devcontainer/scripts'

@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "mcp__sequential__sequentialthinking",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:www.npmjs.com)"
     ],
     "deny": []
   }
