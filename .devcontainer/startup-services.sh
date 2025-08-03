@@ -35,18 +35,13 @@ if command -v tailscaled &> /dev/null; then
             echo "📊 프로세스 정보:"
             ps aux | grep tailscaled | grep -v grep
             
-            # auth key가 있으면 자동 연결
-            if [ -n "$TAILSCALE_AUTH_KEY" ]; then
-                echo "🔐 Tailscale 자동 인증 시도..."
-                if sudo tailscale up --authkey="$TAILSCALE_AUTH_KEY" --hostname="claude-devcontainer" --accept-routes; then
-                    echo "✅ Tailscale 연결 완료"
-                    sudo tailscale status
-                else
-                    echo "❌ Tailscale 인증 실패"
-                fi
-            else
-                echo "⚠️  TAILSCALE_AUTH_KEY가 없습니다. 수동 연결 필요: sudo tailscale up"
-            fi
+            # 웹 로그인으로 연결 (더 간단하고 안정적)
+            echo "🔐 Tailscale 웹 로그인 연결을 시작합니다..."
+            echo "📋 다음 명령어를 실행해서 웹 브라우저에서 Google 로그인하세요:"
+            echo "   sudo tailscale up --hostname=claude-devcontainer --accept-routes"
+            echo ""
+            echo "🚀 자동 실행 중..."
+            sudo tailscale up --hostname="claude-devcontainer" --accept-routes
         else
             echo "❌ Tailscaled 프로세스 시작 실패"
             echo "📝 디버깅 정보:"

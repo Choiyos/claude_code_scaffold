@@ -54,23 +54,20 @@ else
     exit 1
 fi
 
-# Tailscale 인증 (auth key 사용)
-if [ -n "$TAILSCALE_AUTH_KEY" ]; then
-    echo "🔐 Tailscale 자동 인증 중..."
-    sudo tailscale up --auth-key="$TAILSCALE_AUTH_KEY" --hostname="claude-devcontainer" --accept-routes
-    
-    # 연결 상태 확인
-    sleep 5
-    if sudo tailscale status &>/dev/null; then
-        echo -e "${GREEN}✅ Tailscale 연결 성공!${NC}"
-        sudo tailscale status
-    else
-        echo -e "${YELLOW}⚠️  Tailscale 연결 확인 실패${NC}"
-    fi
+# Tailscale 웹 로그인 연결
+echo "🔐 Tailscale 웹 로그인 연결을 시작합니다..."
+echo -e "${YELLOW}📋 웹 브라우저에서 Google 계정으로 로그인해주세요${NC}"
+echo ""
+sudo tailscale up --hostname="claude-devcontainer" --accept-routes
+
+# 연결 상태 확인
+sleep 3
+if sudo tailscale status &>/dev/null; then
+    echo -e "${GREEN}✅ Tailscale 연결 성공!${NC}"
+    sudo tailscale status
 else
-    echo -e "${YELLOW}⚠️  TAILSCALE_AUTH_KEY 환경변수가 설정되지 않았습니다${NC}"
-    echo "수동으로 인증하려면:"
-    echo "  sudo tailscale up"
+    echo -e "${YELLOW}⚠️  Tailscale 로그인이 완료되지 않았습니다${NC}"
+    echo "나중에 수동으로 연결하려면: sudo tailscale up"
 fi
 
 echo "🎉 Tailscale 설정 완료!"
