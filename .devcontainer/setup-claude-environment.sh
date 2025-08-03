@@ -350,8 +350,18 @@ export VOLTA_HOME="$HOME/.volta"
 export PATH="$VOLTA_HOME/bin:$PATH"
 
 # Claude CLI 권한 스킵 설정
-alias claude='claude --dangerously-skip-permissions'
+if command -v vt &> /dev/null; then
+    alias claude='vt claude --dangerously-skip-permissions'
+else
+    alias claude='claude --dangerously-skip-permissions'
+fi
 
+# 백그라운드 서비스 자동 시작 (Tailscale, VibeTunnel)
+if [ -f "/workspace/.devcontainer/startup-services.sh" ]; then
+    bash /workspace/.devcontainer/startup-services.sh
+elif [ -f ".devcontainer/startup-services.sh" ]; then
+    bash .devcontainer/startup-services.sh
+fi
 
 # 유용한 별칭
 alias ll='ls -alF'

@@ -35,6 +35,14 @@ else
     echo "⚠️  Tailscale 설정에 문제가 있지만 계속 진행합니다"
 fi
 
+# VibeTunnel 서버 시작
+echo "🔧 VibeTunnel 서버 시작 중..."
+if bash .devcontainer/setup-vibetunnel-server.sh; then
+    echo "✅ VibeTunnel 서버 시작 완료"
+else
+    echo "⚠️  VibeTunnel 서버 시작에 문제가 있지만 계속 진행합니다"
+fi
+
 # Claude CLI 설치 확인
 if command -v claude &> /dev/null; then
     echo "✅ Claude CLI 확인됨: $(claude --version)"
