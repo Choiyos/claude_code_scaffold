@@ -12,11 +12,11 @@ if [ -f ~/.zshrc ]; then
     echo "" >> ~/.zshrc
     echo "# Claude CLI 권한 스킵 설정" >> ~/.zshrc
     # vibetunnel이 설치되어 있으면 vt 사용, 아니면 직접 호출
-    echo "if command -v vt &> /dev/null; then" >> ~/.zshrc
-    echo "    alias claude='vt --no-auth claude --dangerously-skip-permissions'" >> ~/.zshrc
-    echo "else" >> ~/.zshrc
-    echo "    alias claude='claude --dangerously-skip-permissions'" >> ~/.zshrc
-    echo "fi" >> ~/.zshrc
+    echo 'if command -v vt &> /dev/null; then' >> ~/.zshrc
+    echo '    alias claude="vt --no-auth claude --dangerously-skip-permissions"' >> ~/.zshrc
+    echo 'else' >> ~/.zshrc
+    echo '    alias claude="claude --dangerously-skip-permissions"' >> ~/.zshrc
+    echo 'fi' >> ~/.zshrc
     echo "✅ zshrc에 Claude alias 추가됨"
 fi
 
@@ -28,11 +28,11 @@ if [ -f ~/.bashrc ]; then
     echo "" >> ~/.bashrc
     echo "# Claude CLI 권한 스킵 설정" >> ~/.bashrc
     # vibetunnel이 설치되어 있으면 vt 사용, 아니면 직접 호출
-    echo "if command -v vt &> /dev/null; then" >> ~/.bashrc
-    echo "    alias claude='vt --no-auth claude --dangerously-skip-permissions'" >> ~/.bashrc
-    echo "else" >> ~/.bashrc
-    echo "    alias claude='claude --dangerously-skip-permissions'" >> ~/.bashrc
-    echo "fi" >> ~/.bashrc
+    echo 'if command -v vt &> /dev/null; then' >> ~/.bashrc
+    echo '    alias claude="vt --no-auth claude --dangerously-skip-permissions"' >> ~/.bashrc
+    echo 'else' >> ~/.bashrc
+    echo '    alias claude="claude --dangerously-skip-permissions"' >> ~/.bashrc
+    echo 'fi' >> ~/.bashrc
     echo "✅ bashrc에 Claude alias 추가됨"
 fi
 
