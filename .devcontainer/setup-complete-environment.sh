@@ -27,6 +27,14 @@ if bash .devcontainer/setup-shell-aliases.sh; then
     echo "✅ Shell alias 영구 설정 완료"
 fi
 
+# Tailscale 설정
+echo "🔧 Tailscale 설정 중..."
+if bash .devcontainer/setup-tailscale.sh; then
+    echo "✅ Tailscale 설정 완료"
+else
+    echo "⚠️  Tailscale 설정에 문제가 있지만 계속 진행합니다"
+fi
+
 # Claude CLI 설치 확인
 if command -v claude &> /dev/null; then
     echo "✅ Claude CLI 확인됨: $(claude --version)"

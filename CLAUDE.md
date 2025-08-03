@@ -72,6 +72,9 @@ docker-compose ps
 
 # Individual service logs
 docker-compose logs -f grafana
+
+# Tailscale status (if configured)
+sudo tailscale status
 ```
 
 ### Development Workflow
@@ -177,18 +180,21 @@ The container automatically:
 ### First Time Setup
 
 #### 1. 환경변수 설정 (호스트 머신에서)
-OAuth 토큰 방식 (추천):
-```bash
-# 토큰 생성
-claude setup-token
 
-# 환경변수 설정 (받은 토큰으로 교체)
+Claude 인증 설정:
+```bash
+# OAuth 토큰 방식 (추천)
+claude setup-token
 export CLAUDE_CODE_OAUTH_TOKEN="sk-ant-oat01-..."
+
+# 또는 API 키 방식
+export ANTHROPIC_API_KEY="sk-ant-api03-..."
 ```
 
-또는 API 키 방식:
+Tailscale 설정 (선택사항):
 ```bash
-export ANTHROPIC_API_KEY="sk-ant-api03-..."
+# Tailscale auth key 설정
+export TAILSCALE_AUTH_KEY="tskey-auth-..."
 ```
 
 #### 2. DevContainer 시작
@@ -198,6 +204,7 @@ export ANTHROPIC_API_KEY="sk-ant-api03-..."
 4. Wait 3-5 minutes for automatic setup
 5. Use Claude Code CLI immediately (인증 자동 완료)
 6. **MCP 서버 자동 설치**: 5개 MCP 서버가 자동으로 설치 및 연결됨
+7. **Tailscale 자동 연결**: TAILSCALE_AUTH_KEY가 설정되어 있으면 자동으로 연결됨
 
 ### Daily Development
 - Open VS Code, container resumes in seconds
